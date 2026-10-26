@@ -1,0 +1,1 @@
+button.menu-row { display: flex; width: 100%; max-width: none; margin: 0; padding: 30rpx 6rpx; background: transparent; border-radius: 0; text-align: left; font-size: inherit; font-weight: normal; line-height: inherit; color: inherit; }

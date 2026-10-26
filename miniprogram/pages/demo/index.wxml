@@ -1,0 +1,4 @@
+<view class="page"><view wx:if="{{error}}" class="error">{{error}}</view><block wx:if="{{available}}"><text class="section-title">开发演示</text><text class="muted">所有数据只在本机保存，可以切换身份体验同一场活动。</text><view class="notice small">演示时间：{{currentTime}}</view>
+  <button wx:for="{{personas}}" wx:key="id" class="{{selected === item.id ? 'primary' : 'secondary'}} spaced wide" data-id="{{item.id}}" bindtap="select">{{item.name}}{{selected === item.id ? ' · 当前' : ''}}</button>
+  <button class="secondary spaced wide" bindtap="advance">推进到示例活动报名截止后</button><button class="danger spaced wide" bindtap="reset">重置本机演示数据</button><button class="primary spaced wide" bindtap="home">返回活动首页</button>
+</block></view>

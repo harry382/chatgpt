@@ -1,0 +1,7 @@
+.categories { white-space: nowrap; border-bottom: 1rpx solid #e1e8dc; padding-bottom: 18rpx; }
+.category { display: inline-block; padding: 12rpx 24rpx; margin-right: 8rpx; background: transparent; color: #697b6e; }
+.category.selected { background: #e3eee4; color: #357e6b; font-weight: 600; }
+.date-filter { display: flex; justify-content: space-between; align-items: center; padding-top: 22rpx; }
+.date-value { padding: 10rpx 0; color: #357e6b; }
+.date-heading { display: flex; gap: 16rpx; align-items: baseline; padding: 34rpx 0 24rpx; }
+.date-title { font-size: 42rpx; font-weight: 600; }

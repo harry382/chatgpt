@@ -1,0 +1,6 @@
+<view class="v2-node-view v2 v2-form-page"><view class="v2-node-view v2-eyebrow">A LITTLE ABOUT YOU</view><view class="v2-node-view v2-display">让书友认识你。</view><view class="v2-node-view v2-muted">头像、昵称与介绍会在活动成员中展示。</view>
+ <button class="v2-node-button v2-avatar-upload" open-type="chooseAvatar" bindchooseavatar="avatar"><image wx:if="{{avatarUrl}}" class="v2-node-image v2-avatar" src="{{avatarUrl}}" mode="aspectFill"/><view wx:else class="v2-node-view v2-avatar v2-avatar-default">＋</view><text class="v2-node-text">选择头像</text></button>
+ <view class="v2-node-view v2-field"><text class="v2-node-text">昵称</text><input class="v2-node-input" type="nickname" data-field="form.nickname" value="{{form.nickname}}" bindinput="field" maxlength="24" placeholder="大家怎么称呼你"/></view>
+ <view class="v2-node-view v2-field"><text class="v2-node-text">自我介绍</text><textarea class="v2-node-textarea" data-field="form.bio" value="{{form.bio}}" bindinput="field" maxlength="200" placeholder="在读什么？对什么话题感兴趣？"/></view>
+ <view wx:if="{{error}}" class="v2-node-view v2-error">{{error}}</view><button class="v2-node-button v2-primary" bindtap="save" disabled="{{working}}" loading="{{working}}">保存资料</button>
+</view>

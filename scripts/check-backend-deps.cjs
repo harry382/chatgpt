@@ -1,0 +1,12 @@
+'use strict';
+const path=require('node:path'),assert=require('node:assert/strict'),{createRequire}=require('node:module');
+const directory=process.argv[2]?path.resolve(process.argv[2]):path.resolve(__dirname,'../cloudfunctions/readingClubV2'),req=createRequire(path.join(directory,'package.json'));
+const set=req('lodash.set'),unset=req('lodash.unset'),object={};
+set(object,'books[0].title','共读');assert.equal(object.books[0].title,'共读');
+set(object,'__proto__.v2Polluted',true);set(object,'constructor.prototype.v2Polluted',true);assert.equal({}.v2Polluted,undefined);
+assert.equal(unset(object,'books[0].title'),true);assert.equal(object.books[0].title,undefined);
+const cloud=req('wx-server-sdk');cloud.init({env:'integration-check-only'});
+assert.equal(typeof cloud.database().collection,'function');assert.equal(typeof cloud.database().runTransaction,'function');
+assert.equal(typeof cloud.openapi.security.msgSecCheck,'function');assert.equal(typeof cloud.openapi.security.imgSecCheck,'function');assert.equal(typeof cloud.openapi.subscribeMessage.send,'function');assert.equal(typeof cloud.openapi.wxacode.getUnlimited,'function');
+assert.equal(typeof req('tencentcloud-sdk-nodejs-sms').sms.v20210111.Client,'function');req('./handler');
+console.log('Backend dependencies load independently; database, moderation, SMS, share and notification APIs exist; safe set/unset preserve nested fields and block prototype mutation. No external request or SMS was sent.');

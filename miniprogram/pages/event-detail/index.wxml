@@ -1,0 +1,19 @@
+<view wx:if="{{isDemo}}" class="demo-banner">开发演示 · 数据仅保存在本机</view>
+<view wx:if="{{error}}" class="page"><view class="error">{{error}}<button class="quiet" bindtap="load">刷新活动</button></view></view>
+<view wx:if="{{loading}}" class="empty">正在加载活动…</view>
+<view wx:elif="{{!member && !error}}" class="page"><view class="empty">活动仅向已审核的社群成员开放。</view><button class="primary" bindtap="membership">申请会员或查看审核结果</button></view>
+<block wx:elif="{{event}}">
+  <view class="detail-hero"><view class="book"><text class="book-title">{{event.book || '共读书目'}}</text><text class="book-caption">共读书目</text></view><view class="detail-summary"><text class="tag">线下 · {{event.category}}</text><text class="detail-title">{{event.title}}</text><text class="muted small">发起：{{event.organizerName}}</text><text class="summary-count">报名 {{event.count}}/{{event.maxCapacity}} 人</text></view></view>
+  <view class="page detail-body">
+    <view class="fact"><text class="muted fact-label">时间</text><text>{{event.dateLabel}} {{event.weekLabel}}　{{event.timeLabel}}</text></view>
+    <view class="fact"><text class="muted fact-label">地点</text><text>{{event.location}}</text></view>
+    <view class="fact"><text class="muted fact-label">截止</text><text>{{event.deadlineLabel}}</text></view>
+    <view class="notice"><text class="notice-title">{{event.statusLabel}}</text><text>最低 {{event.minCapacity}} 位读者，上限 {{event.maxCapacity}} 位；组织者不占读者名额。</text><text wx:if="{{event.cancellationReason}}" class="reason">取消原因：{{event.cancellationReason}}</text></view>
+    <view class="spaced"><text class="section-title"><text class="underlined">内容简介</text></text><text class="multiline">{{event.description}}</text></view>
+    <view wx:if="{{event.preparation}}" class="spaced"><text class="section-title"><text class="underlined">参加前准备</text></text><text class="multiline">{{event.preparation}}</text></view>
+    <view class="notice small">报名截止前可以自行取消；截止后如需变更，请在社群内联系组织者。</view>
+    <view wx:if="{{event.canManage}}" class="actions"><button class="secondary" bindtap="manage">管理活动</button><button wx:if="{{event.canEdit}}" class="secondary" bindtap="edit">编辑活动</button></view>
+    <view class="actions"><button class="quiet" bindtap="home">返回活动首页</button></view>
+  </view>
+  <view class="bottom-actions"><button class="secondary share" open-type="share">转发</button><button class="primary register" bindtap="register" loading="{{working}}" disabled="{{working || event.actionDisabled}}">{{event.actionLabel}}</button></view>
+</block>

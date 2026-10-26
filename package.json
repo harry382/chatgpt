@@ -1,0 +1,17 @@
+{
+  "name": "reading-club-mvp",
+  "version": "1.1.0-preview.1",
+  "private": true,
+  "description": "现有读书会社群的微信活动小程序",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "sync": "node scripts/sync-shared.cjs",
+    "check": "node scripts/check-project.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "verify": "node scripts/check-project.cjs && node --test tests/*.test.cjs",
+    "check:release": "node scripts/check-release.cjs",
+    "check:backend": "node scripts/check-backend-deps.cjs"
+  }
+}

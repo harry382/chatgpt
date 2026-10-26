@@ -1,0 +1,17 @@
+<view class="hero"><text class="eyebrow">READ TOGETHER</text><text class="hero-title">隐私与个人信息</text><text class="subtitle">了解信息用途，再决定是否使用会员服务</text></view>
+<view class="page">
+  <view class="panel"><text class="section-title">我们处理哪些信息</text><text>微信身份标识用于识别账户和校验权限；你填写的社群昵称、所在社群用于会员审核。报名记录保存活动、昵称、状态及时间，供你查询和管理报名。系统还记录隐私同意版本及时间、必要的内容审核结果。</text></view>
+  <view class="panel"><text class="section-title">谁能查看</text><text>管理员核对会员资料；对应活动的组织者和管理员可查看有效报名名单中的昵称及时间。普通会员只能查看自己的报名记录和活动人数。组织者昵称会随活动展示给会员。</text></view>
+  <view class="panel"><text class="section-title">云端处理与内容审核</text><text>资料和报名记录通过微信云开发在云端处理和保存。昵称、群名、活动文字及必要的审核说明会提交微信文本内容安全检测；未通过或检测异常时，不会完成相应提交或发布。我们不获取微信头像、手机号、通讯录或设备定位，不接入广告、支付功能。</text></view>
+  <view class="panel"><text class="section-title">保存、更正与注销</text><text>信息仅保留实现已告知服务目的所必要的时间。取消报名只改变报名状态，不会删除历史。当前更正、删除和注销通过管理员人工受理，没有自助注销或按固定天数自动清理功能。</text><text class="contact">联系邮箱：{{email}}</text><text>申请时请说明所需事项，管理员核验账户后，按平台隐私指引所列期限核查和处理。请勿在昵称和群名中填写身份证、住址等与报名无关的信息。</text></view>
+  <view class="panel"><text class="section-title">你的选择</text><text>你可以不提交会员资料。未同意时可阅读隐私说明；会员审核、活动及报名服务需要处理上述必要信息。如需撤回同意或注销，可通过上述邮箱联系。未满 14 周岁的用户应与监护人共同阅读，并在获得监护人同意后使用。</text></view>
+  <button class="secondary" bindtap="openContract">查看微信平台隐私保护指引</button>
+  <text class="small muted policy-version">说明版本：{{version}}</text>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{authorize}}" class="consent-area">
+    <checkbox-group bindchange="check"><label class="consent-label"><checkbox value="agree" checked="{{agreed}}" color="#357e6b" /><text>我已阅读并同意上述说明及小程序隐私保护指引</text></label></checkbox-group>
+    <button wx:if="{{needsPlatformConsent}}" id="agree-privacy" class="primary spaced" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="agreeNative" disabled="{{!ready || !agreed || working}}" loading="{{working}}">同意并继续</button>
+    <button wx:else class="primary spaced" bindtap="agree" disabled="{{!ready || !agreed || working}}" loading="{{working}}">同意并继续</button>
+    <button class="quiet spaced" bindtap="decline" disabled="{{working}}">暂不同意，返回</button>
+  </view>
+</view>

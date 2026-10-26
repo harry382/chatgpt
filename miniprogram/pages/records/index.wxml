@@ -1,0 +1,6 @@
+<view class="page"><text class="section-title">{{kind === 'created' ? '我发起的活动和草稿' : '我的报名'}}</text>
+  <view wx:if="{{error}}" class="error">{{error}}<button class="quiet" bindtap="retry">重新加载</button></view>
+  <view wx:for="{{events}}" wx:key="id"><text class="muted small">{{item.dateLabel}} {{item.weekLabel}}</text><event-card event="{{item}}" bind:select="open" /></view>
+  <view wx:if="{{!loading && !events.length && !error}}" class="empty">暂时没有相关记录</view>
+  <view wx:if="{{loading}}" class="empty">正在加载…</view><button wx:if="{{hasMore}}" class="secondary" bindtap="more" disabled="{{loading}}">查看更多</button>
+</view>

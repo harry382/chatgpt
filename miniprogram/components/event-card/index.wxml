@@ -1,0 +1,12 @@
+<button class="event-card" bindtap="select" aria-label="查看{{event.title}}">
+  <view class="book"><text class="book-title">{{event.book || '共读书目'}}</text><text class="book-caption">共读书目</text></view>
+  <view class="event-info">
+    <text class="event-title">{{event.title || '未命名草稿'}}</text>
+    <view><text class="tag">线下</text><text class="tag">{{event.category || '待分类'}}</text></view>
+    <text class="event-meta">{{event.timeLabel}}</text>
+    <text class="event-meta">{{event.location || '地点待填写'}}</text>
+    <text class="event-meta">报名 {{event.count}}/{{event.maxCapacity}} 人</text>
+    <text class="event-status">{{event.statusLabel}}</text>
+    <text wx:if="{{event.personalLabel}}" class="event-status">{{event.personalLabel}}</text>
+  </view>
+</button>

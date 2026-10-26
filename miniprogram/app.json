@@ -1,0 +1,55 @@
+{
+  "pages": [
+    "v2/pages/home/index",
+    "v2/pages/detail/index",
+    "v2/pages/membership/index",
+    "v2/pages/register/index",
+    "v2/pages/mine/index",
+    "v2/pages/editor/index",
+    "v2/pages/profile/index",
+    "v2/pages/privacy/index",
+    "pages/home/index",
+    "pages/event-detail/index",
+    "pages/membership/index",
+    "pages/mine/index",
+    "pages/event-editor/index",
+    "pages/records/index",
+    "pages/event-manage/index",
+    "pages/admin/index",
+    "pages/demo/index",
+    "pages/privacy/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "一起共读",
+    "navigationBarBackgroundColor": "#5aaa95",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fbfcf8",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#6c7a70",
+    "selectedColor": "#357e6b",
+    "backgroundColor": "#fffefa",
+    "list": [
+      {
+        "pagePath": "v2/pages/home/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "v2/pages/mine/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json",
+  "permission": {
+    "scope.userLocation": {
+      "desc": "发起活动时由你选择活动地点，供参与者打开地图导航"
+    }
+  },
+  "requiredPrivateInfos": [
+    "chooseLocation"
+  ]
+}

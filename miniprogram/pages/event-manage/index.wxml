@@ -1,0 +1,10 @@
+<view class="page"><view wx:if="{{error}}" class="error">{{error}}<button class="quiet" bindtap="retry">刷新</button></view><view wx:if="{{loading}}" class="empty">正在加载名单…</view>
+  <block wx:if="{{event}}"><text class="section-title">{{event.title}}</text><view class="notice"><text class="notice-title">{{event.statusLabel}}</text><text>报名 {{event.count}}/{{event.maxCapacity}} 位读者，最低 {{event.minCapacity}} 人。</text></view>
+    <text class="section-title">报名名单</text><view wx:for="{{readers}}" wx:key="id" class="menu-row"><text>{{item.nickname}}</text><text class="small muted">{{item.time}}</text></view>
+    <view wx:if="{{!readers.length}}" class="empty">暂时还没有人报名</view><button wx:if="{{hasMore}}" class="secondary spaced" bindtap="more" disabled="{{loading}}">加载更多名单</button>
+    <block wx:if="{{event.canCancel}}"><text class="section-title spaced">举办决定</text><view class="notice small">报名截止后，达到最低人数可确认举办。报名人数达标不会自动确认。</view><button class="primary" data-decision="confirm" bindtap="decide" disabled="{{working || !event.canConfirm}}">{{event.status === 'confirmed' ? '已确认举办' : '确认举办'}}</button>
+      <view class="field spaced"><text class="field-label">取消原因</text><input value="{{reason}}" bindinput="reason" maxlength="160" placeholder="如：人数不足，稍后再约" /></view><button class="danger" data-decision="cancel" bindtap="decide" disabled="{{working}}">取消活动</button>
+    </block>
+    <view wx:if="{{event.cancellationReason}}" class="notice">取消原因：{{event.cancellationReason}}</view>
+  </block>
+</view>

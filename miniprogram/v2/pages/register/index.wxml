@@ -1,0 +1,15 @@
+<view class="v2-node-view v2">
+ <view class="v2-node-view v2-register-hero"><view class="v2-node-view v2-eyebrow">READ TOGETHER</view><view class="v2-node-view v2-display">读书这件小事<view class="v2-node-view">值得一起认真对待。</view></view><view class="v2-node-view v2-hero-sub">用当前微信身份，免费加入一起共读。</view></view>
+ <view class="v2-node-view v2-register-form"><view class="v2-node-view v2-section">{{returning ? '欢迎回来' : existing ? '已有会员 · 更新隐私指引' : '免费注册会员'}}<text class="v2-node-text v2-pill">当前免费</text></view>
+  <view wx:if="{{demo}}" class="v2-node-view v2-hint">开发演示：注册结果仅保存在本机，不创建线上会员。</view>
+  <view wx:if="{{!existing}}" class="v2-node-view v2-field"><text class="v2-node-text">昵称</text><input class="v2-node-input" value="{{nickname}}" bindinput="field" data-field="nickname" maxlength="24" placeholder="填写一个让书友认识你的称呼"/><view class="v2-node-view v2-muted v2-small">1至24字，将展示给同场书友。头像和自我介绍可稍后填写。</view></view>
+  <view wx:else class="v2-node-view v2-hint">{{nickname}}，使用当前微信即可找回你的会员资料和活动记录。</view>
+  <view class="v2-node-view v2-prose">无需手机号或验证码。我们使用微信提供给本小程序的身份标识识别账号，不获取你的微信号、联系人或聊天记录。</view>
+  <checkbox-group wx:if="{{!returning}}" bindchange="check" class="v2-node-checkbox v2-consent"><label><checkbox class="v2-node-checkbox" value="agree" checked="{{agreed}}" color="#318b77"/>我已阅读并同意</label><text bindtap="privacy" class="v2-node-text v2-inline-link">《用户协议》《隐私保护说明》</text></checkbox-group>
+  <button wx:else class="v2-node-button v2-link" bindtap="privacy">查看用户协议与隐私保护说明</button>
+  <view wx:if="{{error}}" class="v2-node-view v2-error">{{error}}</view>
+  <button wx:if="{{needsPlatformConsent && !platformAccepted}}" class="v2-node-button v2-primary" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="agreeNative" loading="{{working}}" disabled="{{working || (!returning && !agreed) || !platformReady || (!existing && !nickname)}}">{{returning ? '授权并登录' : existing ? '同意并继续使用' : '同意并免费注册'}}</button>
+  <button wx:else class="v2-node-button v2-primary" bindtap="register" loading="{{working}}" disabled="{{working || (!returning && !agreed) || !platformReady || (!existing && !nickname)}}">{{returning ? '微信登录' : existing ? '同意并继续使用' : '免费注册并加入'}}</button>
+  <view class="v2-node-view v2-footer-note">当前阶段会员免费，注册和报名不收取会员费。</view>
+ </view>
+</view>

@@ -1,0 +1,30 @@
+<view class="v2-node-view v2">
+ <view wx:if="{{demo}}" class="v2-node-view v2-demo">1.1.0 交互预览 · 所有活动与账号均为演示</view>
+ <view class="v2-node-view v2-hero">
+  <view class="v2-node-view v2-eyebrow">READ TOGETHER · 一起共读</view>
+  <view class="v2-node-view v2-hero-title"><text class="v2-node-text v2-spark">✳</text><view class="v2-node-view">把时间留给阅读</view><view class="v2-node-view">把想法分享给彼此</view></view>
+  <view class="v2-node-view v2-hero-sub">从一本书开始，遇见同频的朋友。</view>
+  <view class="v2-node-view v2-quick">
+   <view bindtap="membership" class="v2-node-view v2-quick-card"><view class="v2-node-view v2-icon">▤</view><view class="v2-node-view"><view class="v2-node-view v2-quick-title">{{user.member ? '我的会员' : '成为会员'}}</view><view class="v2-node-view v2-caption">免费加入 · 一起读书</view></view><text class="v2-node-text">↗</text></view>
+   <view bindtap="create" class="v2-node-view v2-quick-card"><view class="v2-node-view v2-icon">＋</view><view class="v2-node-view"><view class="v2-node-view v2-quick-title">发起活动</view><view class="v2-node-view v2-caption">分享一本你爱的书</view></view><text class="v2-node-text">↗</text></view>
+  </view>
+  <scroll-view scroll-x class="v2-categories"><text wx:for="{{categories}}" wx:key="*this" class="v2-node-text v2-category {{category === item ? 'active' : ''}}" data-value="{{item}}" bindtap="category">{{item}}</text></scroll-view>
+ </view>
+ <view class="v2-node-view v2-sheet">
+  <view class="v2-node-view v2-row"><view class="v2-node-view v2-section">共读日历<text class="v2-node-text v2-section-note">线下 · 免费活动</text></view><picker class="v2-node-picker" mode="date" value="{{date}}" bindchange="date"><view class="v2-node-view v2-date-chip">{{date || '选择日期'}} ▦</view></picker></view>
+  <view wx:if="{{date}}" class="v2-node-view v2-date-reset" bindtap="clearDate">查看所有日期 ×</view>
+  <view wx:if="{{error}}" class="v2-node-view v2-error">{{error}}<text class="v2-node-text" bindtap="refresh"> · 重试</text></view>
+  <view wx:for="{{groups}}" wx:key="date" wx:for-item="group" class="v2-node-view v2-date-group">
+   <view class="v2-node-view v2-date-heading"><text class="v2-node-text">{{group.label}}</text><text class="v2-node-text v2-week">周{{group.week}}</text><view class="v2-node-view v2-date-line"></view></view>
+   <view wx:for="{{group.events}}" wx:key="id" class="v2-node-view v2-event" data-id="{{item.id}}" bindtap="openEvent">
+    <view class="v2-node-view v2-event-body"><view class="v2-node-view v2-event-tags"><text class="v2-node-text v2-tag">{{item.category}}</text><text class="v2-node-text v2-status {{item.full ? 'full' : ''}}">{{item.statusLabel}}</text></view><view class="v2-node-view v2-event-title">{{item.title}}</view><view class="v2-node-view v2-meta">◷ {{item.time}}—{{item.endLabel}}</view><view class="v2-node-view v2-meta v2-ellipsis">⌖ {{item.location}}</view><view class="v2-node-view v2-event-foot"><text class="v2-node-text">{{item.count}} / {{item.capacity}} 位书友</text><text class="v2-node-text">{{item.full ? '可候补' : '查看活动'}} ↗</text></view></view>
+    <image wx:if="{{item.coverUrl}}" class="v2-node-image v2-cover" src="{{item.coverUrl}}" mode="aspectFill"/>
+    <view wx:else class="v2-node-view v2-cover v2-book {{item.category === '心理' ? 'sand' : ''}}"><text class="v2-node-text v2-book-top">一起共读</text><text class="v2-node-text v2-book-name">{{item.book}}</text><view class="v2-node-view v2-book-art">◯<text class="v2-node-text">╱</text></view><text class="v2-node-text v2-book-bottom">READ TOGETHER</text></view>
+   </view>
+  </view>
+  <view wx:if="{{loading}}" class="v2-node-view v2-empty">正在整理共读日历…</view>
+  <view wx:if="{{!loading && !groups.length}}" class="v2-node-view v2-empty"><view class="v2-node-view v2-empty-icon">▤</view>这一天，留给下一次相遇<view class="v2-node-view v2-muted">暂时没有符合条件的活动</view><button class="v2-node-button v2-link" bindtap="clearDate">看看其他活动</button></view>
+  <button wx:if="{{hasMore}}" class="v2-node-button v2-light" bindtap="more">查看更多活动</button>
+  <view class="v2-node-view v2-footer-note">一起阅读，也一起看见更大的世界。</view>
+ </view>
+</view>

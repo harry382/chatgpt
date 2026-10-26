@@ -1,0 +1,12 @@
+<view wx:if="{{isDemo}}" class="demo-banner">开发演示 · 数据仅保存在本机</view>
+<view class="hero"><text class="eyebrow">MY READING CLUB</text><text class="hero-title">{{user.nickname || '你好，书友'}}</text><text class="subtitle">{{membershipLabel}} {{member ? '· ' + roleLabel : ''}}</text></view>
+<view class="page">
+  <view wx:if="{{error}}" class="error">{{error}}<button wx:if="{{privacyRequired}}" class="secondary spaced" bindtap="authorizePrivacy">阅读隐私指引并选择</button><button wx:else class="quiet" bindtap="load">重试</button></view>
+  <button class="menu-row" bindtap="membership"><text>会员中心</text><text class="muted">{{membershipLabel}} ›</text></button>
+  <button wx:if="{{member}}" class="menu-row" data-kind="joined" bindtap="records"><text>我的报名</text><text>›</text></button>
+  <button wx:if="{{organizer}}" class="menu-row" data-kind="created" bindtap="records"><text>我发起的活动和草稿</text><text>›</text></button>
+  <button wx:if="{{organizer}}" class="menu-row" bindtap="create"><text>发起活动</text><text>›</text></button>
+  <button wx:if="{{admin}}" class="menu-row" bindtap="admin"><text>会员审核与组织者管理</text><text>›</text></button>
+  <button class="menu-row" bindtap="privacy"><text>隐私与个人信息</text><text>›</text></button>
+  <button wx:if="{{isDemo}}" class="menu-row" bindtap="demo"><text>开发演示</text><text class="muted">切换体验身份 ›</text></button>
+</view>

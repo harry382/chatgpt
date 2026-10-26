@@ -1,0 +1,11 @@
+.detail-hero { display: flex; gap: 34rpx; padding: 36rpx; background: #e0eee3; }
+.detail-summary { flex: 1; min-width: 0; }
+.detail-title { display: block; font-size: 38rpx; font-weight: 600; margin: 14rpx 0 20rpx; }
+.summary-count { display: block; margin-top: 8rpx; color: #46624f; }
+.detail-body { padding-bottom: 220rpx; }
+.fact { display: flex; gap: 20rpx; padding: 22rpx 0; border-bottom: 1rpx solid #e1e8dc; }
+.fact-label { flex: 0 0 58rpx; }
+.reason { display: block; margin-top: 12rpx; color: #923b35; }
+.bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 20rpx; background: #fffefa; padding: 22rpx 28rpx; padding-bottom: calc(22rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #e1e8dc; }
+.share { flex: 0 0 130rpx; }
+.register { flex: 1; min-width: 0; }

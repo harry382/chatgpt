@@ -1,0 +1,2 @@
+'use strict';const u=require('../../ui');
+Page({data:{user:null,error:'',demo:false},async onShow(){try{this.setData({user:await u.session(),demo:!!u.api().demo});}catch(e){u.error(this,e);}},register(){u.navigate('register');},privacy(){u.navigate('privacy');},continue(){if(this.data.user?.privacyVersion!==u.VERSION){u.navigate('register');return;}const id=getApp().pendingEvent();if(id){getApp().clearPendingEvent();u.navigate('detail','?id='+id);}else wx.switchTab({url:'/v2/pages/mine/index'});}});

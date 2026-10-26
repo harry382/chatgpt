@@ -1,0 +1,11 @@
+{
+  "name": "@yiqi/safe-lodash-unset",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "description": "Compatibility export of maintained lodash unset",
+  "dependencies": {},
+  "peerDependencies": {
+    "lodash": "4.18.1"
+  }
+}

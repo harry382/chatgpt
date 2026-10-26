@@ -1,0 +1,8 @@
+<view class="page"><text class="section-title">会员审核与组织者管理</text><view class="actions"><button class="{{status === 'pending' ? 'primary' : 'secondary'}}" data-status="pending" bindtap="tab">待审核</button><button class="{{status === 'approved' ? 'primary' : 'secondary'}}" data-status="approved" bindtap="tab">已加入</button></view>
+  <view wx:if="{{error}}" class="error">{{error}}<button class="quiet" bindtap="retry">重新加载</button></view>
+  <view wx:for="{{members}}" wx:key="id" class="panel spaced"><text class="section-title">{{item.nickname}}</text><text class="muted small">{{item.groupName}} · {{item.roleLabel}}</text>
+    <view wx:if="{{status === 'pending'}}" class="actions"><button class="secondary" data-id="{{item.id}}" data-decision="reject" bindtap="review" disabled="{{working}}">不通过</button><button class="primary" data-id="{{item.id}}" data-decision="approve" bindtap="review" disabled="{{working}}">审核通过</button></view>
+    <button wx:elif="{{item.role !== 'admin'}}" class="secondary spaced wide" data-id="{{item.id}}" data-enabled="{{item.role !== 'organizer'}}" bindtap="organizer" disabled="{{working}}">{{item.role === 'organizer' ? '取消组织者身份' : '设为组织者'}}</button>
+  </view>
+  <view wx:if="{{!loading && !members.length && !error}}" class="empty">暂时没有相关成员</view><view wx:if="{{loading}}" class="empty">正在加载…</view><button wx:if="{{hasMore}}" class="secondary" bindtap="more" disabled="{{loading}}">查看更多成员</button>
+</view>

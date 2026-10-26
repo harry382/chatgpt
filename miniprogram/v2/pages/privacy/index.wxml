@@ -1,0 +1,9 @@
+<view class="v2-node-view v2 v2-form-page"><view class="v2-node-view v2-eyebrow">YOUR PRIVACY MATTERS</view><view class="v2-node-view v2-display">用户协议与<view class="v2-node-view">隐私保护说明</view></view><view class="v2-node-view v2-muted">版本 {{version}}</view>
+ <view class="v2-node-view v2-prose"><view class="v2-node-view v2-section">一起共读用户约定</view>会员当前免费，活动是否有个人场地消费，以活动说明为准。请尊重书友，发布与你有权使用的内容。报名后若行程改变，请及时取消。群码限已报名成员使用，请勿公开传播。发布违法或不当内容可能被限制使用。</view>
+ <view class="v2-node-view v2-prose"><view class="v2-node-view v2-section">我们处理哪些信息</view>注册时使用微信提供给本小程序的身份标识识别账号，不收集手机号、短信验证码、微信号、联系人或聊天记录。你主动填写的昵称、头像、自我介绍，以及活动内容、报名、候补、主持申请和签到记录，用于提供相应服务。服务端将身份标识转换为本小程序内的账号标识；内容安全接口按微信要求处理微信身份标识。</view>
+ <view class="v2-node-view v2-prose"><view class="v2-node-view v2-section">展示、权限与存储</view>主动填写的昵称、头像和自我介绍会展示给查看活动的书友，微信身份标识不公开。你选择上传图片时才读取所选图片；发起人选点时才调用地图选点；导航由微信地图完成，不持续追踪位置。活动地点会向查看该活动的用户展示，请使用活动场所地址，勿填写不愿公开的私人住址。群码仅在报名成功后向你提供；临时链接可能被保存或转发，请勿传播。</view>
+ <view class="v2-node-view v2-prose"><view class="v2-node-view v2-section">服务提供方与通知</view>活动与账号数据使用腾讯云云开发；内容发布调用微信内容安全检测。候补递补会形成站内通知，微信订阅提醒仅在配置并取得你的单独授权后提供。账号及活动信息按实现服务目的所需的最短时间保存，依法另有规定的除外。</view>
+ <view class="v2-node-view v2-prose"><view class="v2-node-view v2-section">你的选择与权利</view>无需注册即可浏览公开活动。注册前需主动同意本说明。你可以编辑个人资料、取消未开始活动的报名。申请查阅、更正、删除信息或注销账号，请联系下方邮箱。我们会核验本人身份后在15个工作日内处理；依法需保留的数据除外。14周岁以下用户请由监护人阅读并同意后使用。</view>
+ <view wx:if="{{demo}}" class="v2-node-view v2-hint">当前开发预览使用本地演示数据，不创建线上会员。</view>
+ <button class="v2-node-button v2-light" bindtap="email">联系邮箱：{{email}} · 点击复制</button><button class="v2-node-button v2-link" bindtap="contract">查看微信平台隐私保护指引</button>
+</view>

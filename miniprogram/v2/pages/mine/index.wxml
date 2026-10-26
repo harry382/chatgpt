@@ -1,0 +1,19 @@
+<view class="v2-node-view v2">
+ <view wx:if="{{demo}}" class="v2-node-view v2-demo">开发预览 · 演示账号与线上数据隔离</view>
+ <view class="v2-node-view v2-profile-hero"><view class="v2-node-view v2-row"><text class="v2-node-text v2-eyebrow">MY READING LIFE</text><text wx:if="{{user.member}}" class="v2-node-text v2-profile-edit" bindtap="edit">编辑资料 ↗</text></view>
+ <view class="v2-node-view v2-profile-row" bindtap="register"><image wx:if="{{user.avatarUrl}}" src="{{user.avatarUrl}}" class="v2-node-image v2-avatar" mode="aspectFill"/><view wx:else class="v2-node-view v2-avatar v2-avatar-default">▤</view><view class="v2-node-view v2-profile-name">{{user.member ? user.nickname : '注册 / 登录'}}<view class="v2-node-view v2-profile-badge">{{user.member ? '一起共读 · 免费会员' : '从一本书，认识新的朋友'}}</view></view></view>
+ <view class="v2-node-view v2-bio">{{user.bio || (user.member ? '还没有自我介绍，写几句让大家认识你吧。' : '加入一起共读，把想法分享给彼此。')}}</view>
+ <button wx:if="{{!user.member}}" class="v2-node-button v2-white-button" bindtap="register">免费注册 / 微信登录 →</button><button wx:if="{{!user.member}}" class="v2-node-button v2-link" bindtap="intro">了解一起共读</button>
+ </view>
+ <view class="v2-node-view v2-sheet v2-my-sheet"><view class="v2-node-view v2-row"><view class="v2-node-view v2-section">我的活动</view><text class="v2-node-text v2-muted v2-small">每一次相遇，都值得记得</text></view>
+ <view class="v2-node-view v2-tabs"><text class="v2-node-text {{tab === 'upcoming' ? 'active' : ''}}" bindtap="tab" data-value="upcoming">待参加</text><text class="v2-node-text {{tab === 'attended' ? 'active' : ''}}" bindtap="tab" data-value="attended">已参加</text><text class="v2-node-text {{tab === 'created' ? 'active' : ''}}" bindtap="tab" data-value="created">已发起</text></view>
+ <view wx:if="{{error}}" class="v2-node-view v2-error">{{error}}</view>
+ <view wx:for="{{events}}" wx:key="id" class="v2-node-view v2-my-event" data-id="{{item.id}}" bindtap="openEvent"><view class="v2-node-view"><view class="v2-node-view v2-event-title">{{item.title}}</view><view class="v2-node-view v2-meta">{{item.fullLabel}}</view><view class="v2-node-view v2-meta">{{item.location}}</view></view><text class="v2-node-text v2-tag">{{item.myStatus === 'waitlist' ? '候补中' : item.myStatus === 'checked_in' ? '已签到' : item.myStatus === 'ended' ? '已结束' : item.statusLabel}}</text></view>
+ <view wx:if="{{!events.length && !loading}}" class="v2-node-view v2-empty"><view class="v2-node-view v2-empty-icon">▤</view>{{user.member ? '下一次共读，等你加入' : '登录后，在这里查看你的活动'}}<button bindtap="home" class="v2-node-button v2-link">去看看活动 →</button></view>
+ <button wx:if="{{hasMore}}" class="v2-node-button v2-light" bindtap="more">加载更多</button>
+ <view wx:if="{{notices.length}}" class="v2-node-view v2-notices"><view class="v2-node-view v2-section">活动通知<text class="v2-node-text v2-section-note">站内消息</text></view><view wx:for="{{notices}}" wx:key="id" data-id="{{item.eventId}}" bindtap="notice" class="v2-node-view v2-notice-row">{{item.message}}<text class="v2-node-text"> ↗</text></view></view>
+ <view class="v2-node-view v2-settings" bindtap="privacy"><text class="v2-node-text">隐私、用户协议与账号帮助</text><text class="v2-node-text">›</text></view>
+ <button wx:if="{{user.member}}" class="v2-node-button v2-light" bindtap="logout">退出登录</button>
+ <view wx:if="{{demo}}" class="v2-node-view v2-demo-tools"><view class="v2-node-view v2-row"><text class="v2-node-text">体验不同角色</text><button bindtap="resetDemo" class="v2-node-button v2-link">重置演示</button></view><view class="v2-node-view v2-demo-roles"><button wx:for="{{personas}}" wx:key="id" bindtap="demoRole" data-id="{{item.id}}" class="v2-node-button {{personaIndex === index ? 'selected' : ''}}">{{item.name}}</button></view></view>
+ </view>
+</view>

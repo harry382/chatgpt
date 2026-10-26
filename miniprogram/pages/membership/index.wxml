@@ -1,0 +1,16 @@
+<view wx:if="{{isDemo}}" class="demo-banner">开发演示 · 数据仅保存在本机</view>
+<view class="page">
+  <text class="section-title">和社群里的朋友，一起共读</text><text class="muted">会员免费加入，管理员将核对你的社群成员身份。</text>
+  <view wx:if="{{error}}" class="error">{{error}}<button wx:if="{{privacyRequired}}" class="secondary spaced" bindtap="authorizePrivacy">阅读隐私指引并选择</button></view><view wx:if="{{loading}}" class="empty">正在读取会员状态…</view>
+  <view wx:elif="{{member}}" class="panel spaced"><text class="section-title">你已成为会员</text><text>{{user.nickname}} · {{roleLabel}}</text><button class="primary spaced" bindtap="continue">{{pendingEvent ? '继续查看分享的活动' : '去看看活动'}}</button></view>
+  <view wx:elif="{{user.status === 'pending'}}" class="notice"><text class="notice-title">申请已提交，等待管理员审核</text><text>社群昵称：{{user.nickname}}
+所在社群：{{user.groupName}}</text><button class="secondary spaced" bindtap="load">刷新审核状态</button></view>
+  <block wx:elif="{{user}}">
+    <view wx:if="{{user.status === 'rejected'}}" class="notice"><text class="notice-title">本次申请未通过</text><text>{{user.rejectionReason}}</text><text>请核对社群信息后重新申请。</text></view>
+    <view class="field spaced"><text class="field-label">社群内昵称</text><input value="{{nickname}}" data-field="nickname" bindinput="input" maxlength="24" placeholder="填写群里使用的昵称" /></view>
+    <view class="field"><text class="field-label">所在社群</text><input value="{{groupName}}" data-field="groupName" bindinput="input" maxlength="60" placeholder="填写读书会群名称" /></view>
+    <text class="muted small">昵称和群名将用于会员及内容审核，通过后可报名活动。</text>
+    <button class="primary spaced" bindtap="apply" loading="{{working}}" disabled="{{working}}">提交入会申请</button>
+  </block>
+  <button class="quiet small spaced" bindtap="privacy">隐私与个人信息</button>
+</view>

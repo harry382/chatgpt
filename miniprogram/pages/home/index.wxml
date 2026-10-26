@@ -1,0 +1,22 @@
+<view wx:if="{{isDemo}}" class="demo-banner">开发演示 · 数据仅保存在本机</view>
+<view class="hero">
+  <text class="eyebrow">READ TOGETHER</text><text class="hero-title">一起共读</text>
+  <text class="subtitle small">把共读排进日历，与书友面对面交流</text>
+  <view class="actions"><button class="secondary" bindtap="membership">{{member ? '会员中心' : '成为会员'}}</button><button wx:if="{{organizer}}" class="secondary" bindtap="createEvent">发起活动</button></view>
+</view>
+<view class="page">
+  <view wx:if="{{error}}" class="error">{{error}}<button wx:if="{{privacyRequired}}" class="secondary spaced" bindtap="authorizePrivacy">阅读隐私指引并选择</button><button wx:else class="quiet" bindtap="refresh">重新加载</button></view>
+  <block wx:if="{{member}}">
+    <scroll-view class="categories" scroll-x="{{true}}"><button wx:for="{{categories}}" wx:key="*this" class="category {{category === item ? 'selected' : ''}}" data-category="{{item}}" bindtap="setCategory">{{item}}</button></scroll-view>
+    <view class="date-filter"><picker mode="date" value="{{date}}" bindchange="setDate"><view class="date-value">{{date || '选择活动日期'}}</view></picker><button wx:if="{{date}}" class="quiet small" bindtap="clearDate">全部日期</button></view>
+    <view wx:for="{{groups}}" wx:key="date" wx:for-item="group">
+      <view class="date-heading"><text class="date-title underlined">{{group.label}}</text><text class="small muted">{{group.week}}</text></view>
+      <event-card wx:for="{{group.events}}" wx:key="id" event="{{item}}" bind:select="openEvent" />
+    </view>
+    <view wx:if="{{!loading && !events.length && !error}}" class="empty">这一天或类别还没有活动</view>
+    <button wx:if="{{hasMore}}" class="secondary load-more" loading="{{loading}}" bindtap="loadMore">查看更多活动</button>
+  </block>
+  <view wx:elif="{{!loading && !error}}" class="empty"><text>会员审核通过后，可查看完整活动并报名。</text><button class="primary spaced" bindtap="membership">{{user.status === 'pending' ? '查看申请进度' : '申请加入读书会'}}</button></view>
+  <view wx:if="{{loading}}" class="empty">正在加载活动…</view>
+  <button class="quiet small spaced" bindtap="privacy">隐私与个人信息</button>
+</view>

@@ -1,0 +1,6 @@
+button.event-card { display: flex; gap: 26rpx; width: 100%; max-width: none; background: transparent; border-radius: 0; text-align: left; font-size: inherit; font-weight: normal; line-height: inherit; color: inherit; padding: 16rpx 0 32rpx; margin: 0 0 22rpx; border-bottom: 1rpx solid #e1e8dc; }
+button.event-card::after { border: 0; }
+.event-info { flex: 1; min-width: 0; }
+.event-title { display: block; font-size: 32rpx; font-weight: 600; margin-bottom: 10rpx; }
+.event-meta { display: block; color: #697b6e; font-size: 24rpx; margin-top: 5rpx; word-break: break-all; }
+.event-status { display: block; color: #357e6b; font-size: 24rpx; margin-top: 9rpx; }

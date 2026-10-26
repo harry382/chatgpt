@@ -1,0 +1,1 @@
+.notice text { display: block; white-space: pre-wrap; }

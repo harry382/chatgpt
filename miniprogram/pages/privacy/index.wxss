@@ -1,0 +1,5 @@
+.contact { display: block; color: #286b58; margin: 20rpx 0; overflow-wrap: anywhere; }
+.policy-version { display: block; margin: 20rpx 0; }
+.consent-area { margin-top: 32rpx; }
+.consent-label { display: flex; gap: 14rpx; align-items: flex-start; }
+.consent-label checkbox { flex: 0 0 auto; }

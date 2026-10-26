@@ -1,0 +1,1 @@
+'use strict';const u=require('../../ui');Page({data:{email:'privacy@example.com',version:u.VERSION,demo:false},onLoad(){this.setData({demo:!!u.api().demo});},contract(){u.promiseWx('openPrivacyContract').catch(e=>wx.showToast({title:e.message,icon:'none'}));},email(){wx.setClipboardData({data:this.data.email});}});
