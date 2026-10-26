@@ -52,7 +52,11 @@ function createService(store, options = {}) {
     return value.map(n => ({ title: text(n?.title, '须知标题', 40), body: text(n?.body, '须知内容', 500) }));
   }
   async function imageList(unit, values, user, kind, previous, accepted, max) {
-    if (!Array.isArray(values) || values.length > max || values.some(id => !validId(id)) || new Set(values).size !== values.length) fail('MEDIA_INVALID', '图片列表无效或超过' + max + '张');
+    if (!Array.isArray(values)) fail('MEDIA_INVALID', '图片列表无效');
+    // Cached 1.1 editors round-trip the hydrated event object. Retain only
+    // existing attached IDs from object-shaped items; ignore all client URLs.
+    values = values.map(value => typeof value === 'string' ? value : value && (previous || []).includes(value.assetId) ? value.assetId : null);
+    if (values.length > max || values.some(id => !validId(id)) || new Set(values).size !== values.length) fail('MEDIA_INVALID', '图片列表无效或超过' + max + '张');
     for (const id of values) {
       const a = await unit.get(TABLES.assets, id), kept = (previous || []).includes(id);
       if (!a || a.kind !== kind || a.status !== 'approved' || !kept && a.ownerId !== user.id) fail('MEDIA_INVALID', '请使用自己上传且已审核的图片');

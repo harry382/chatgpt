@@ -101,3 +101,11 @@ test('V3 old events default to editable notices, and 1.1 save requests preserve 
  await assert.rejects(f.call('owner','updateEventContent',{id:e.id,version:stored.version,notices:[{title:'',body:'无标题'}]}),{code:'VALIDATION'});
  const r = await f.call('owner','updateEventContent',{ id:e.id, version:stored.version, notices:[] }); assert.deepEqual(r.event.notices,[]);
 });
+
+test('V3 cached 1.1 editor may round-trip existing hydrated images but cannot forge public assets or URLs',async()=>{
+ const f=fixture();await f.image('asset_existing');await f.image('asset_unattached');
+ const e=(await f.call('owner','saveEvent',{...f.draft,descriptionImages:['asset_existing'],publicationAccepted:true})).event;
+ const updated=await f.call('owner','saveEvent',{...f.draft,...e,publish:true,descriptionImages:[{assetId:'asset_existing',url:'https://untrusted.invalid/forged',status:'approved'}]});
+ assert.deepEqual((await f.store.get(T.events,e.id)).descriptionImages,['asset_existing']);assert.ok(!JSON.stringify(updated).includes('untrusted.invalid'));
+ await assert.rejects(f.call('owner','saveEvent',{...f.draft,...updated.event,publish:true,descriptionImages:[{assetId:'asset_unattached',url:'https://untrusted.invalid',status:'approved'}]}),{code:'MEDIA_INVALID'});
+});
