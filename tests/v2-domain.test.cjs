@@ -122,3 +122,13 @@ test('V2 a storage failure rolls back both the event count and registration',asy
   const f=fixture(),e=(await f.call('owner','saveEvent',f.draft)).event;f.store.onSave=()=>{throw Error('simulated persistence failure');};
   await assert.rejects(f.call('amy','join',{id:e.id}),/persistence failure/);assert.equal((await f.call('amy','getEvent',{id:e.id})).event.count,0);assert.equal((await f.call('amy','getEvent',{id:e.id})).registration,null);
 });
+
+test('V3 waitlist delivery snapshots the consenting client version without changing legacy-client defaults',async()=>{
+ const f=fixture({notificationsEnabled:true,notificationState:'formal'}),e=(await f.call('owner','saveEvent',f.draft)).event;
+ await f.call('amy','join',{id:e.id});await f.call('bob','join',{id:e.id});await f.call('cat','join',{id:e.id,waitlist:true});
+ await f.call('cat','authorizeNotification',{id:e.id,accepted:true,clientState:'trial'});await f.call('amy','cancelRegistration',{id:e.id});
+ const row=(await f.call('cat','notices')).notices[0];assert.equal(row.pushState,'trial');
+ await f.call('cat','authorizeNotification',{id:e.id,accepted:true,clientState:'formal'});assert.equal((await f.store.get(T.notices,row.id)).pushState,'trial');
+ await f.call('bob','authorizeNotification',{id:e.id,accepted:true});assert.equal((await f.store.get(T.subscriptions,e.id+'__bob')).state,'formal');
+ await assert.rejects(f.call('cat','authorizeNotification',{id:e.id,accepted:true,clientState:'release'}),{code:'VALIDATION'});
+});

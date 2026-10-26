@@ -84,7 +84,7 @@ function createService(store, options = {}) {
     const requested = ['候补成功', '活动取消'].includes(result) && (!sub?.purpose || sub.purpose === 'waitlist');
     const queued = !!options.notificationsEnabled && requested && sub?.remaining > 0;
     if (queued) { sub.remaining -= 1; await unit.put(TABLES.subscriptions, sub.id, sub); }
-    await unit.put(TABLES.notices, key, { id: key, userId, eventId, message, result, createdAt: now(), read: false, delivery: 'in_app', pushStatus: queued ? 'queued' : !options.notificationsEnabled ? 'not_configured' : !requested ? 'not_requested' : 'not_subscribed' });
+    await unit.put(TABLES.notices, key, { id: key, userId, eventId, message, result, createdAt: now(), read: false, delivery: 'in_app', ...(queued && sub.state ? { pushState: sub.state } : {}), pushStatus: queued ? 'queued' : !options.notificationsEnabled ? 'not_configured' : !requested ? 'not_requested' : 'not_subscribed' });
   }
   async function promote(unit, e) {
     if (e.status !== 'published' || now() >= e.signupUntil || now() >= e.startAt) return;
@@ -100,10 +100,12 @@ function createService(store, options = {}) {
     async capabilities() { return { apiVersion: '1.2.0', features: { history: true, eventImages: true, eventNotices: true }, ...(options.capabilities || { authentication: 'wechat', sms: false, subscriptionTemplateId: '' }) }; },
     async authorizeNotification(actor, p) {
       if (!options.notificationsEnabled || !actor.openid) fail('NOT_CONFIGURED', '微信订阅提醒尚未配置，站内通知可正常使用');
+      if (p.clientState !== undefined && !['developer', 'trial', 'formal'].includes(p.clientState)) fail('VALIDATION', '订阅消息目标版本无效');
+      const state = p.clientState || options.notificationState;
       return store.transaction(async unit => {
         await member(unit, actor); const e = await event(unit, p.id), r = await unit.get(TABLES.registrations, regId(e.id, actor.id));
         if (!r || !['registered', 'waitlist'].includes(r.status) || p.accepted !== true) fail('FORBIDDEN', '仅已报名或候补成员可授权提醒');
-        const id = regId(e.id, actor.id); await unit.put(TABLES.subscriptions, id, { id, openid: actor.openid, userId: actor.id, eventId: e.id, purpose: 'waitlist', remaining: 1, updatedAt: now() });
+        const id = regId(e.id, actor.id); await unit.put(TABLES.subscriptions, id, { id, openid: actor.openid, userId: actor.id, eventId: e.id, purpose: 'waitlist', ...(state ? { state } : {}), remaining: 1, updatedAt: now() });
         return { saved: true };
       });
     },

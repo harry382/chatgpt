@@ -31,7 +31,8 @@ async function flushNotifications(store,cloud,env,logger=console) {
       if(!subscription?.openid||!event)throw Error('MISSING_SUBSCRIPTION');
       const data=notificationData(cfg.fields,event,row);
       let timer;
-      try{const result=await Promise.race([cloud.openapi.subscribeMessage.send({touser:subscription.openid,templateId:env.SUBSCRIBE_TEMPLATE_ID,page:'v2/pages/detail/index?id='+event.id,data,miniprogramState:cfg.state,lang:'zh_CN'}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('DELIVERY_TIMEOUT')),4500);})]);status=Number(result.errCode??result.errcode)===0?'sent':'failed';}finally{clearTimeout(timer);}
+      const state=['developer','trial','formal'].includes(row.pushState)?row.pushState:cfg.state;
+      try{const result=await Promise.race([cloud.openapi.subscribeMessage.send({touser:subscription.openid,templateId:env.SUBSCRIBE_TEMPLATE_ID,page:'v2/pages/detail/index?id='+event.id,data,miniprogramState:state,lang:'zh_CN'}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('DELIVERY_TIMEOUT')),4500);})]);status=Number(result.errCode??result.errcode)===0?'sent':'failed';}finally{clearTimeout(timer);}
     }catch(e){logger.warn?.('v2 notification delivery unresolved',{code:e.code||e.errCode||'UNKNOWN'});}
     await store.transaction(async unit=>{const current=await unit.get(T.notices,row.id);if(current?.pushStatus==='sending'){current.pushStatus=status;await unit.put(T.notices,current.id,current);}});
     // Network ambiguity is deliberately not retried: the in-app notification persists, and automatic retry could duplicate a push.

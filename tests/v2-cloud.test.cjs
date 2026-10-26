@@ -79,3 +79,13 @@ test('V3 risky public photos never enter storage or become attachable content',a
  const r=await f.handler({action:'uploadImage',payload:{kind:'recap',type:'image/png',base64:Buffer.from([137,80,78,71,13,10,26,10,1]).toString('base64')}});
  assert.equal(r.error.code,'CONTENT_REJECTED');assert.equal(uploads,0);assert.equal(Object.keys(f.store.snapshot()[T.assets]||{}).length,0);
 });
+
+test('V3 trial and release posters use separate files and targets while old clients keep the configured default',async()=>{
+ const f=setup();await f.store.put(T.events,'event_share',{id:'event_share',status:'published',visibility:'public',creatorId:f.id});
+ const requests=[],paths=[];f.cloud.openapi.wxacode={getUnlimited:async p=>{requests.push(p);return{buffer:Buffer.from('test image')};}};f.cloud.uploadFile=async p=>{paths.push(p.cloudPath);return{fileID:'cloud://code'};};
+ const handler=createHandler(f.cloud,{WX_APP_ID:'wx-test',SHARE_CODE_ENV:'release'},{error(){}});
+ for(const targetVersion of ['trial','release',undefined])assert.equal((await handler({action:'shareCode',payload:{id:'event_share',targetVersion,page:'untrusted/page'}})).ok,true);
+ assert.deepEqual(requests.map(r=>r.envVersion),['trial','release','release']);assert.deepEqual(requests.map(r=>r.checkPath),[false,true,true]);
+ assert.notEqual(paths[0],paths[1]);assert.ok(paths[0].includes('/trial/'));assert.ok(paths[1].includes('/release/'));assert.ok(requests.every(r=>r.page==='v2/pages/detail/index'));
+ assert.equal((await handler({action:'shareCode',payload:{id:'event_share',targetVersion:'unknown'}})).error.code,'VALIDATION');assert.equal(requests.length,3);
+});

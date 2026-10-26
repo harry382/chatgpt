@@ -7,7 +7,7 @@ const { flushNotifications, notificationConfig } = require('./notifications');
 function createHandler(cloud, env = process.env, logger = console) {
   const store = new CloudStore(cloud.database());
   const notify = notificationConfig(env);
-  const service = createService(store, { notificationsEnabled: notify.enabled, capabilities: { authentication: 'wechat', sms: false, subscriptionTemplateId: notify.enabled ? env.SUBSCRIBE_TEMPLATE_ID : '' }, makeId: () => 'e_' + crypto.randomBytes(12).toString('hex'), checkContent: (actor, content, scene) => createContentChecker(cloud)(actor, [content], scene === "profile" ? 1 : 3) });
+  const service = createService(store, { notificationsEnabled: notify.enabled, notificationState: notify.state, capabilities: { authentication: 'wechat', sms: false, subscriptionTemplateId: notify.enabled ? env.SUBSCRIBE_TEMPLATE_ID : '' }, makeId: () => 'e_' + crypto.randomBytes(12).toString('hex'), checkContent: (actor, content, scene) => createContentChecker(cloud)(actor, [content], scene === "profile" ? 1 : 3) });
   async function media(actor, p) {
     const user = await store.get(T.users, actor.id);
     if (!user || user.status !== 'active' || user.privacyVersion !== VERSION) throw new ClubError('MEMBER_REQUIRED', '请先注册并同意隐私指引');
@@ -52,17 +52,21 @@ function createHandler(cloud, env = process.env, logger = console) {
       else if (request.action === 'shareCode') {
         const detail = await service.call(actor, 'getEvent', { id: request.payload?.id });
         if (detail.event.status !== 'published' || !['trial', 'release'].includes(env.SHARE_CODE_ENV || '')) throw new ClubError('NOT_CONFIGURED', '活动海报小程序码尚未配置');
+        const requested = request.payload?.targetVersion;
+        if (requested !== undefined && !['trial', 'release'].includes(requested)) throw new ClubError('VALIDATION', '活动码目标版本无效');
+        // Older clients omit the target and keep the configured production behavior.
+        const targetVersion = requested || env.SHARE_CODE_ENV;
         let code;
         // Trial-only pages are not yet present in the published package checked by WeChat.
         // The route is fixed here; clients cannot supply an arbitrary page.
-        try { code = await cloud.openapi.wxacode.getUnlimited({ scene: detail.event.id, page: 'v2/pages/detail/index', checkPath: env.SHARE_CODE_ENV === 'release', envVersion: env.SHARE_CODE_ENV, width: 280 }); }
+        try { code = await cloud.openapi.wxacode.getUnlimited({ scene: detail.event.id, page: 'v2/pages/detail/index', checkPath: targetVersion === 'release', envVersion: targetVersion, width: 280 }); }
         catch (error) {
           const numeric = String(error.errCode ?? error.errcode ?? error.code ?? '');
           const suffix = /^-?\d{1,9}$/.test(numeric) ? '（微信错误码' + numeric + '）' : '';
           throw new ClubError('CODE_UNAVAILABLE', '活动码暂时无法生成' + suffix + '，请稍后重试');
         }
         if (!code.buffer || !Buffer.isBuffer(code.buffer)) throw new ClubError('CODE_UNAVAILABLE', '小程序码生成失败，请稍后重试');
-        const uploaded = await cloud.uploadFile({ cloudPath: 'v2/share/' + detail.event.id + '.png', fileContent: code.buffer });
+        const uploaded = await cloud.uploadFile({ cloudPath: 'v2/share/' + targetVersion + '/' + detail.event.id + '.png', fileContent: code.buffer });
         const response = await cloud.getTempFileURL({ fileList: [{ fileID: uploaded.fileID, maxAge: 600 }] });
         data = { url: response.fileList?.[0]?.tempFileURL || '' };
       } else data = await service.call(actor, request.action, request.payload || {});

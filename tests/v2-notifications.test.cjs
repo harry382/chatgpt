@@ -28,3 +28,10 @@ test('V2 template config refuses mismatched field types and invalid target envir
  assert.equal(notificationConfig({...env,SUBSCRIBE_STATE:'release'}).enabled,false);
  assert.throws(()=>notificationData({phrase9:'result'},{startAt:Date.now()},{result:'成功:'}),/INVALID_TEMPLATE_VALUE/);
 });
+
+test('V3 queued trial reminders stay on trial even when global settings and later subscriptions use formal',async()=>{
+ const store=fixture(),row=await store.get(T.notices,'notice_1');row.pushState='trial';await store.put(T.notices,row.id,row);
+ const sent=[];const cloud={openapi:{subscribeMessage:{send:async r=>{sent.push(r);return{errCode:0};}}}};
+ await flushNotifications(store,cloud,{...env,SUBSCRIBE_STATE:'formal'});assert.equal(sent[0].miniprogramState,'trial');
+ const old=fixture();await flushNotifications(old,cloud,{...env,SUBSCRIBE_STATE:'formal'});assert.equal(sent[1].miniprogramState,'formal');
+});
