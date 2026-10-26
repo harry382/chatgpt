@@ -20,7 +20,13 @@
    </view>
    <view class="v2-node-view v2-location" bindtap="location"><text class="v2-node-text v2-location-icon">⌖</text><view class="v2-node-view">{{event.location}}<view class="v2-node-view v2-caption">{{event.address || '点击打开微信地图导航'}}</view></view><text class="v2-node-text">↗</text></view>
    <view wx:if="{{event.status === 'cancelled'}}" class="v2-node-view v2-error">活动已取消：{{event.cancellationReason}}</view>
-   <view class="v2-node-view v2-info-block"><view class="v2-node-view v2-section"><text class="v2-node-text v2-highlight">内容简介</text></view><view class="v2-node-view v2-text">{{event.description}}</view><view wx:if="{{event.descriptionImages.length}}" class="v2-node-view v2-description-gallery"><image wx:for="{{event.descriptionImages}}" wx:key="assetId" class="v2-node-image v2-content-photo" src="{{item.url}}" mode="widthFix" lazy-load="{{true}}" data-kind="description" data-index="{{index}}" bindtap="previewImage"/></view></view>
+   <view class="v2-node-view v2-info-block">
+    <view class="v2-node-view v2-section"><text class="v2-node-text v2-highlight">内容简介</text></view>
+    <swiper wx:if="{{event.descriptionImages.length}}" class="v2-description-carousel" indicator-dots="{{event.descriptionImages.length > 1}}" indicator-color="rgba(49,139,119,.25)" indicator-active-color="#318b77" circular="{{event.descriptionImages.length > 1}}">
+     <swiper-item wx:for="{{event.descriptionImages}}" wx:key="assetId"><image class="v2-node-image v2-description-image" src="{{item.url}}" mode="aspectFit" data-kind="description" data-index="{{index}}" bindtap="previewImage"/></swiper-item>
+    </swiper>
+    <view class="v2-node-view v2-text">{{event.description}}</view>
+   </view>
    <view wx:if="{{event.remarks}}" class="v2-node-view v2-info-block"><view class="v2-node-view v2-section"><text class="v2-node-text v2-highlight">推荐语 & 备注</text></view><view class="v2-node-view v2-text">{{event.remarks}}</view></view>
   </view>
   <view class="v2-node-view v2-sheet">
@@ -29,7 +35,13 @@
     <view class="v2-node-view v2-section">现场活动照片</view><view wx:if="{{event.recapText}}" class="v2-node-view v2-text v2-recap-text">{{event.recapText}}</view>
     <image wx:for="{{event.recapImages}}" wx:key="assetId" class="v2-node-image v2-content-photo" src="{{item.url}}" mode="widthFix" lazy-load="{{true}}" data-kind="recap" data-index="{{index}}" bindtap="previewImage"/>
     <view wx:if="{{!event.recapImages.length}}" class="v2-node-view v2-empty v2-recap-empty"><view class="v2-node-view v2-empty-icon">▧</view>相聚已经发生，影像还在路上。<view class="v2-node-view v2-muted v2-small">{{canManage ? '你可以在下方上传现场照片。' : '等待发起人或管理员补充现场照片。'}}</view></view>
-    <view class="v2-node-view v2-recap-original"><view class="v2-node-view v2-section">当时的共读主题</view><view class="v2-node-view v2-text">{{event.description}}</view><image wx:for="{{event.descriptionImages}}" wx:key="assetId" class="v2-node-image v2-content-photo" src="{{item.url}}" mode="widthFix" lazy-load="{{true}}" data-kind="description" data-index="{{index}}" bindtap="previewImage"/></view>
+    <view class="v2-node-view v2-recap-original">
+     <view class="v2-node-view v2-section">当时的共读主题</view>
+     <swiper wx:if="{{event.descriptionImages.length}}" class="v2-description-carousel" indicator-dots="{{event.descriptionImages.length > 1}}" indicator-color="rgba(49,139,119,.25)" indicator-active-color="#318b77" circular="{{event.descriptionImages.length > 1}}">
+      <swiper-item wx:for="{{event.descriptionImages}}" wx:key="assetId"><image class="v2-node-image v2-description-image" src="{{item.url}}" mode="aspectFit" data-kind="description" data-index="{{index}}" bindtap="previewImage"/></swiper-item>
+     </swiper>
+     <view class="v2-node-view v2-text">{{event.description}}</view>
+    </view>
    </view>
    <view wx:if="{{tab === 'members' && !event.ended}}" class="v2-node-view"><view wx:for="{{members}}" wx:key="id" class="v2-node-view v2-member-row"><image wx:if="{{item.avatarUrl}}" class="v2-node-image v2-member-avatar" src="{{item.avatarUrl}}" mode="aspectFill"/><view wx:else class="v2-node-view v2-member-avatar">{{item.nickname}}</view><view class="v2-node-view"><view class="v2-node-view">{{item.nickname}}<text wx:if="{{item.host}}" class="v2-node-text v2-pill">主持人</text></view><text class="v2-node-text v2-muted v2-small">{{item.bio || '很高兴与你一起共读。'}}</text></view><text wx:if="{{item.checkedIn}}" class="v2-node-text v2-tag">已签到</text></view><view wx:if="{{!members.length}}" class="v2-node-view v2-empty">成为第一位报名的书友吧。</view></view>
    <view wx:if="{{tab === 'agenda'}}" class="v2-node-view v2-agenda"><view class="v2-node-view v2-text">{{event.agenda}}</view><view wx:if="{{!event.ended}}" class="v2-node-view v2-hint">每位已报名成员均可申请主持人，由发起人确认。主持人引导交流与发言节奏，让每个人都被听见。</view></view>
