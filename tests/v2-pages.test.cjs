@@ -4,6 +4,7 @@ const {createRequire}=require('node:module');
 const {createV2Client}=require('../miniprogram/v2/runtime');
 const {VERSION,TABLES:T}=require('../miniprogram/v2/shared/domain');
 const root=path.resolve(__dirname,'../miniprogram');
+// Enforce documented WeChat array paths; JS property assignment alone hid a native rendering failure.
 function harness() {
  const storage=new Map(),navigation=[],messages=[];let app;
  const wx={getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,JSON.parse(JSON.stringify(v))),removeStorageSync:k=>storage.delete(k),getAccountInfoSync:()=>({miniProgram:{envVersion:'develop'}}),stopPullDownRefresh(){},showShareMenu(){},navigateTo:r=>navigation.push(r.url),switchTab:r=>navigation.push(r.url),redirectTo:r=>navigation.push(r.url),reLaunch:r=>navigation.push(r.url),navigateBack:()=>navigation.push('back'),showToast:r=>messages.push(r.title),getPrivacySetting:r=>r.success({needAuthorization:false}),showModal:r=>{
@@ -15,7 +16,7 @@ function harness() {
  // Helpers access the real injected app and platform in a dedicated VM require graph.
  const cache=new Map();
  function load(filename){if(cache.has(filename))return cache.get(filename).exports;const module={exports:{}};cache.set(filename,module);const local=createRequire(filename);const requireModule=name=>name.startsWith('.')?load(local.resolve(name)):local(name);const fn=vm.runInNewContext('(function(require,module,exports,wx,getApp,Page){'+fs.readFileSync(filename,'utf8')+'\n})',{setInterval,clearInterval,console},{filename});fn(requireModule,module,module.exports,wx,()=>app,()=>{});return module.exports;}
- function page(name,q={}){let definition;const filename=path.join(root,'v2/pages',name,'index.js'),local=createRequire(filename);vm.runInNewContext(fs.readFileSync(filename,'utf8'),{wx,getApp:()=>app,require:n=>n.startsWith('.')?load(local.resolve(n)):local(n),setInterval,clearInterval,Page:d=>definition=d},{filename});const p={...definition,data:JSON.parse(JSON.stringify(definition.data)),setData(update){for(const [key,value]of Object.entries(update)){const parts=key.split('.');let at=this.data;while(parts.length>1)at=at[parts.shift()];at[parts[0]]=value;}}};p.ready=p.onLoad?.(q);return p;}
+ function page(name,q={}){let definition;const filename=path.join(root,'v2/pages',name,'index.js'),local=createRequire(filename);vm.runInNewContext(fs.readFileSync(filename,'utf8'),{wx,getApp:()=>app,require:n=>n.startsWith('.')?load(local.resolve(n)):local(n),setInterval,clearInterval,Page:d=>definition=d},{filename});const p={...definition,data:JSON.parse(JSON.stringify(definition.data)),setData(update){for(const [key,value]of Object.entries(update)){assert.ok(!/\.\d+(?:\.|$)/.test(key),'Array updates must use WeChat bracket paths: '+key);const parts=key.replace(/\[(\d+)\]/g,'.$1').split('.');let at=this.data;while(parts.length>1)at=at[parts.shift()];at[parts[0]]=value;}}};p.ready=p.onLoad?.(q);return p;}
  return{wx,app,client,page,navigation,storage,messages,ui:load(path.join(root,'v2/ui.js'))};
 }
 const click=dataset=>({currentTarget:{dataset}});

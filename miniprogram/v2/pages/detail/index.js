@@ -30,14 +30,14 @@ Page({
   const ratio=width/height,automatic=ratio>=1&&ratio<=2.4?'aspectFill':'aspectFit',saved=this.descriptionLayouts.get(asset);
   const mode=saved?.manual?saved.mode:automatic;
   this.descriptionLayouts.set(asset,{mode,manual:!!saved?.manual});
-  if(image.displayMode!==mode)this.setData({['event.descriptionImages.'+i+'.displayMode']:mode});
+  if(image.displayMode!==mode)this.setData({['event.descriptionImages['+i+'].displayMode']:mode});
  },
  toggleDescriptionFit(e){
   const {index,asset}=e.currentTarget.dataset,i=Number(index),image=this.data.event?.descriptionImages?.[i];
   if(!Number.isInteger(i)||!image||image.assetId!==asset)return;
   const mode=image.displayMode==='aspectFill'?'aspectFit':'aspectFill';
   this.descriptionLayouts=this.descriptionLayouts||new Map();this.descriptionLayouts.set(asset,{mode,manual:true});
-  this.setData({['event.descriptionImages.'+i+'.displayMode']:mode});
+  this.setData({['event.descriptionImages['+i+'].displayMode']:mode});
  },
  async subscribe(){try{const id=this.data.templateId;if(!id)throw Error('订阅消息尚未配置');const r=await u.promiseWx('requestSubscribeMessage',{tmplIds:[id]});if(r[id]!=='accept'){this.setData({error:'未授权微信提醒。站内消息仍会正常显示。'});return;}await u.api().call('authorizeNotification',{id:this.id,accepted:true,clientState:({release:'formal',trial:'trial',develop:'developer'})[wx.getAccountInfoSync().miniProgram.envVersion]});wx.showToast({title:'已开启一次提醒'});}catch(e){u.error(this,e);}},
  async cancelEvent(){const r=await u.promiseWx('showModal',{title:'取消这场活动',editable:true,placeholderText:'取消原因会通过站内消息告知书友',confirmText:'取消活动'});if(r.confirm)await this.perform('cancelEvent',{id:this.id,reason:(r.content||'').trim()});},
