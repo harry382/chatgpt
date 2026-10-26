@@ -3,7 +3,7 @@ Page({
  data:{event:null,user:null,members:[],creator:null,registration:null,hostRequest:null,tab:'members',error:'',loading:true,working:false,demo:false,canManage:false,management:null,shareOpen:false},
  onLoad(q){this.id=q.id||(q.scene?decodeURIComponent(q.scene):'');this.setData({demo:!!u.api().demo});if(wx.showShareMenu)wx.showShareMenu({menus:['shareAppMessage','shareTimeline']});},
  onShow(){return this.load();},
- async load(){this.setData({loading:true,error:''});try{const r=await u.api().call('getEvent',{id:this.id}),user=await u.session();if(!user?.member)Object.assign(r,{registration:null,hostRequest:null,canManage:false});const view=u.eventView(r.event);if(this.lastEnded!==view.ended){this.setData({tab:view.ended?'recap':'members'});this.lastEnded=view.ended;}this.setData({...r,event:view,user,management:null,templateId:(await u.api().call('capabilities')).subscriptionTemplateId});if(r.canManage)this.setData({management:await u.api().call('manageEvent',{id:this.id})});}catch(e){u.error(this,e);}finally{this.setData({loading:false});}},
+ async load(){this.setData({loading:true,error:''});try{const r=await u.api().call('getEvent',{id:this.id}),user=await u.session();if(!user?.member)Object.assign(r,{registration:null,hostRequest:null,canManage:false});const view=u.eventView(r.event);view.descriptionImages=(view.descriptionImages||[]).map(image=>({...image,displayMode:this.descriptionLayouts?.get(image.assetId)?.mode||'aspectFit'}));if(this.lastEnded!==view.ended){this.setData({tab:view.ended?'recap':'members'});this.lastEnded=view.ended;}this.setData({...r,event:view,user,management:null,templateId:(await u.api().call('capabilities')).subscriptionTemplateId});if(r.canManage)this.setData({management:await u.api().call('manageEvent',{id:this.id})});}catch(e){u.error(this,e);}finally{this.setData({loading:false});}},
  tab(e){this.setData({tab:e.currentTarget.dataset.value});},
  join(){return this.signup(false);},wait(){return this.signup(true);},
  async signup(waitlist){
@@ -20,6 +20,25 @@ Page({
  edit(){u.navigate('editor','?id='+this.id);},
  content(){u.navigate('editor','?id='+this.id+'&content=1');},
  previewImage(e){const {kind,index}=e.currentTarget.dataset,images=this.data.event[kind+'Images']||[],urls=images.map(x=>x.url).filter(Boolean);if(urls.length)wx.previewImage({urls,current:images[Number(index)]?.url||urls[0]});},
+ descriptionImageLoaded(e){
+  const {index,asset}=e.currentTarget.dataset,i=Number(index),image=this.data.event?.descriptionImages?.[i];
+  if(!Number.isInteger(i)||!image||image.assetId!==asset)return;
+  const width=Number(e.detail.width),height=Number(e.detail.height);
+  if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return;
+  this.descriptionLayouts=this.descriptionLayouts||new Map();
+  // Preserve portrait/long content; ordinary landscape photos fill the frame.
+  const ratio=width/height,automatic=ratio>=1&&ratio<=2.4?'aspectFill':'aspectFit',saved=this.descriptionLayouts.get(asset);
+  const mode=saved?.manual?saved.mode:automatic;
+  this.descriptionLayouts.set(asset,{mode,manual:!!saved?.manual});
+  if(image.displayMode!==mode)this.setData({['event.descriptionImages.'+i+'.displayMode']:mode});
+ },
+ toggleDescriptionFit(e){
+  const {index,asset}=e.currentTarget.dataset,i=Number(index),image=this.data.event?.descriptionImages?.[i];
+  if(!Number.isInteger(i)||!image||image.assetId!==asset)return;
+  const mode=image.displayMode==='aspectFill'?'aspectFit':'aspectFill';
+  this.descriptionLayouts=this.descriptionLayouts||new Map();this.descriptionLayouts.set(asset,{mode,manual:true});
+  this.setData({['event.descriptionImages.'+i+'.displayMode']:mode});
+ },
  async subscribe(){try{const id=this.data.templateId;if(!id)throw Error('订阅消息尚未配置');const r=await u.promiseWx('requestSubscribeMessage',{tmplIds:[id]});if(r[id]!=='accept'){this.setData({error:'未授权微信提醒。站内消息仍会正常显示。'});return;}await u.api().call('authorizeNotification',{id:this.id,accepted:true,clientState:({release:'formal',trial:'trial',develop:'developer'})[wx.getAccountInfoSync().miniProgram.envVersion]});wx.showToast({title:'已开启一次提醒'});}catch(e){u.error(this,e);}},
  async cancelEvent(){const r=await u.promiseWx('showModal',{title:'取消这场活动',editable:true,placeholderText:'取消原因会通过站内消息告知书友',confirmText:'取消活动'});if(r.confirm)await this.perform('cancelEvent',{id:this.id,reason:(r.content||'').trim()});},
  share(){this.setData({shareOpen:true});},closeShare(){this.setData({shareOpen:false});},noop(){},

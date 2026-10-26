@@ -116,3 +116,32 @@ test('V3 image picker failure is visible, releases the button, and can retry wit
  h.wx.chooseMedia=r=>r.success({tempFiles:[{tempFilePath:'/demo/retry.jpg'}]});
  await editor.gallery(click({kind:'description'}));assert.equal(editor.data.descriptionImages.length,1);assert.equal(editor.data.form.title,'未保存的介绍');assert.equal(editor.data.error,'');
 });
+test('V3 introduction carousel fills landscape photos, preserves tall content and previews original images',async()=>{
+ const h=harness();h.client.demo.switch('owner');const images=[];
+ for(const name of ['landscape','portrait','panorama'])images.push((await h.client.call('uploadImage',{kind:'description',previewUrl:'/demo/'+name+'.jpg'})).assetId);
+ const original=await h.client.call('getEvent',{id:'e_v2_literature'});
+ await h.client.call('updateEventContent',{id:'e_v2_literature',version:original.event.version,descriptionImages:images,publicationAccepted:true});
+ const p=h.page('detail',{id:'e_v2_literature'});await p.load();
+ const loaded=(index,width,height)=>p.descriptionImageLoaded({...click({index,asset:images[index]}),detail:{width,height}});
+ loaded(0,1600,1200);loaded(1,600,1800);loaded(2,3200,800);
+ assert.deepEqual(Array.from(p.data.event.descriptionImages,x=>x.displayMode),['aspectFill','aspectFit','aspectFit']);
+ let preview;h.wx.previewImage=r=>preview=r;p.previewImage(click({kind:'description',index:1}));
+ assert.equal(preview.current,'/demo/portrait.jpg');assert.deepEqual(Array.from(preview.urls),['/demo/landscape.jpg','/demo/portrait.jpg','/demo/panorama.jpg']);
+ const stored=await h.client.call('getEvent',{id:'e_v2_literature'});assert.equal(stored.event.descriptionImages[0].displayMode,undefined);
+});
+test('V3 manual fit survives image reload and reordering; late callbacks cannot alter a different asset',async()=>{
+ const h=harness();h.client.demo.switch('owner');const images=[];
+ for(const name of ['photo','poster'])images.push((await h.client.call('uploadImage',{kind:'description',previewUrl:'/demo/'+name+'.jpg'})).assetId);
+ const original=await h.client.call('getEvent',{id:'e_v2_literature'});
+ await h.client.call('updateEventContent',{id:'e_v2_literature',version:original.event.version,descriptionImages:images,publicationAccepted:true});
+ const p=h.page('detail',{id:'e_v2_literature'});await p.load();
+ p.descriptionImageLoaded({...click({index:0,asset:images[0]}),detail:{width:1600,height:900}});
+ p.toggleDescriptionFit(click({index:0,asset:images[0]}));
+ p.descriptionImageLoaded({...click({index:0,asset:images[0]}),detail:{width:1600,height:900}});
+ assert.equal(p.data.event.descriptionImages[0].displayMode,'aspectFit');
+ const current=await h.client.call('getEvent',{id:'e_v2_literature'});await h.client.call('updateEventContent',{id:'e_v2_literature',version:current.event.version,descriptionImages:images.slice().reverse()});await p.load();
+ p.descriptionImageLoaded({...click({index:0,asset:images[0]}),detail:{width:2000,height:1000}});
+ p.toggleDescriptionFit(click({index:0,asset:images[0]}));
+ assert.equal(p.data.event.descriptionImages[0].assetId,images[1]);assert.equal(p.data.event.descriptionImages[0].displayMode,'aspectFit');assert.equal(p.data.event.descriptionImages[1].displayMode,'aspectFit');
+ p.descriptionImageLoaded({...click({index:0,asset:images[1]}),detail:{width:Infinity,height:0}});assert.equal(p.data.event.descriptionImages[0].displayMode,'aspectFit');
+});

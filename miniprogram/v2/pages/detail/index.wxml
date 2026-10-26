@@ -22,8 +22,15 @@
    <view wx:if="{{event.status === 'cancelled'}}" class="v2-node-view v2-error">活动已取消：{{event.cancellationReason}}</view>
    <view class="v2-node-view v2-info-block">
     <view class="v2-node-view v2-section"><text class="v2-node-text v2-highlight">内容简介</text></view>
-    <swiper wx:if="{{event.descriptionImages.length}}" class="v2-description-carousel" indicator-dots="{{event.descriptionImages.length > 1}}" indicator-color="rgba(49,139,119,.25)" indicator-active-color="#318b77" circular="{{event.descriptionImages.length > 1}}">
-     <swiper-item wx:for="{{event.descriptionImages}}" wx:key="assetId"><image class="v2-node-image v2-description-image" src="{{item.url}}" mode="aspectFit" data-kind="description" data-index="{{index}}" bindtap="previewImage"/></swiper-item>
+    <swiper wx:if="{{event.descriptionImages.length}}" class="v2-description-carousel" indicator-dots="{{event.descriptionImages.length > 1}}" indicator-color="rgba(255,255,255,.55)" indicator-active-color="#fff3bf" circular="{{event.descriptionImages.length > 1}}">
+     <swiper-item wx:for="{{event.descriptionImages}}" wx:key="assetId">
+      <view class="v2-node-view v2-description-frame" data-kind="description" data-index="{{index}}" bindtap="previewImage">
+       <image wx:if="{{item.displayMode !== 'aspectFill'}}" class="v2-node-image v2-description-backdrop" src="{{item.url}}" mode="aspectFill"/>
+       <view wx:if="{{item.displayMode !== 'aspectFill'}}" class="v2-node-view v2-description-wash"></view>
+       <image class="v2-node-image v2-description-image" src="{{item.url}}" mode="{{item.displayMode || 'aspectFit'}}" data-index="{{index}}" data-asset="{{item.assetId}}" bindload="descriptionImageLoaded"/>
+       <button class="v2-node-button v2-description-fit" catchtap="toggleDescriptionFit" data-index="{{index}}" data-asset="{{item.assetId}}">{{item.displayMode === 'aspectFill' ? '完整' : '铺满'}}</button>
+      </view>
+     </swiper-item>
     </swiper>
     <view class="v2-node-view v2-text">{{event.description}}</view>
    </view>
@@ -37,8 +44,15 @@
     <view wx:if="{{!event.recapImages.length}}" class="v2-node-view v2-empty v2-recap-empty"><view class="v2-node-view v2-empty-icon">▧</view>相聚已经发生，影像还在路上。<view class="v2-node-view v2-muted v2-small">{{canManage ? '你可以在下方上传现场照片。' : '等待发起人或管理员补充现场照片。'}}</view></view>
     <view class="v2-node-view v2-recap-original">
      <view class="v2-node-view v2-section">当时的共读主题</view>
-     <swiper wx:if="{{event.descriptionImages.length}}" class="v2-description-carousel" indicator-dots="{{event.descriptionImages.length > 1}}" indicator-color="rgba(49,139,119,.25)" indicator-active-color="#318b77" circular="{{event.descriptionImages.length > 1}}">
-      <swiper-item wx:for="{{event.descriptionImages}}" wx:key="assetId"><image class="v2-node-image v2-description-image" src="{{item.url}}" mode="aspectFit" data-kind="description" data-index="{{index}}" bindtap="previewImage"/></swiper-item>
+     <swiper wx:if="{{event.descriptionImages.length}}" class="v2-description-carousel" indicator-dots="{{event.descriptionImages.length > 1}}" indicator-color="rgba(255,255,255,.55)" indicator-active-color="#fff3bf" circular="{{event.descriptionImages.length > 1}}">
+      <swiper-item wx:for="{{event.descriptionImages}}" wx:key="assetId">
+      <view class="v2-node-view v2-description-frame" data-kind="description" data-index="{{index}}" bindtap="previewImage">
+       <image wx:if="{{item.displayMode !== 'aspectFill'}}" class="v2-node-image v2-description-backdrop" src="{{item.url}}" mode="aspectFill"/>
+       <view wx:if="{{item.displayMode !== 'aspectFill'}}" class="v2-node-view v2-description-wash"></view>
+       <image class="v2-node-image v2-description-image" src="{{item.url}}" mode="{{item.displayMode || 'aspectFit'}}" data-index="{{index}}" data-asset="{{item.assetId}}" bindload="descriptionImageLoaded"/>
+       <button class="v2-node-button v2-description-fit" catchtap="toggleDescriptionFit" data-index="{{index}}" data-asset="{{item.assetId}}">{{item.displayMode === 'aspectFill' ? '完整' : '铺满'}}</button>
+      </view>
+     </swiper-item>
      </swiper>
      <view class="v2-node-view v2-text">{{event.description}}</view>
     </view>
