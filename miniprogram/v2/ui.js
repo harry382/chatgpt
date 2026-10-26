@@ -26,13 +26,11 @@ function signIn(user){wx.removeStorageSync(SIGNED_OUT);wx.setStorageSync(CONSENT
 function signOut(){wx.setStorageSync(SIGNED_OUT,true);getApp().globalData.user=null;getApp().clearPendingEvent();wx.reLaunch({url:'/v2/pages/mine/index'});}
 async function requireMember(eventId){const u=await session();if(u?.member&&u.privacyVersion===VERSION)return u;if(eventId)getApp().rememberEvent(eventId);navigate(u?.member?'register':'membership');return null;}
 function promiseWx(name,args={}){return new Promise((resolve,reject)=>{if(typeof wx[name]!=='function'){reject(Error('当前微信版本暂不支持此功能'));return;}wx[name]({...args,success:resolve,fail:reject});});}
-async function upload(kind, file) {
+async function upload(kind, file, options={}) {
   let path=file;
   if(!path) {const selected=await promiseWx('chooseMedia',{count:1,mediaType:['image'],sourceType:['album']});path=selected.tempFiles[0].tempFilePath;}
   if(api().demo)return{...(await api().call('uploadImage',{kind,previewUrl:path})),url:path};
-  const compressed=await promiseWx('compressImage',{src:path,quality:65,compressedWidth:1000});
-  const data=await new Promise((resolve,reject)=>wx.getFileSystemManager().readFile({filePath:compressed.tempFilePath,encoding:'base64',success:r=>resolve(r.data),fail:reject}));
-  const png=data.startsWith('iVBOR');return{...(await api().call('uploadImage',{kind,type:png?'image/png':'image/jpeg',base64:data})),url:compressed.tempFilePath};
+  return require('./media-upload').uploadImage(wx,api(),kind,path,options);
 }
 function parseDate(date,time){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}$/.test(time))throw Error('请填写正确的日期和时间');const n=Date.parse(date+'T'+time+':00+08:00');if(!Number.isFinite(n)||dateParts(n).date!==date||dateParts(n).time!==time)throw Error('日期或时间无效');return n;}
 function openEvent(e){navigate('detail','?id='+encodeURIComponent(e.currentTarget.dataset.id));}

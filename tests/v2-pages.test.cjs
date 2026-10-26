@@ -117,6 +117,22 @@ test('V3 image picker failure is visible, releases the button, and can retry wit
  h.wx.chooseMedia=r=>r.success({tempFiles:[{tempFilePath:'/demo/retry.jpg'}]});
  await editor.gallery(click({kind:'description'}));assert.equal(editor.data.descriptionImages.length,1);assert.equal(editor.data.form.title,'未保存的介绍');assert.equal(editor.data.error,'');
 });
+test('V3 a failed third photo preserves two successes and resumes the remaining two without reselecting',async()=>{
+ const h=harness();h.client.demo.switch('owner');const editor=h.page('editor',{id:'e_v2_history',content:'1'});await editor.ready;
+ const original=h.client.call.bind(h.client),files=['one','two','three','four'].map(name=>({tempFilePath:'/demo/'+name+'.jpg'}));let fail=true;const calls=[];
+ h.wx.chooseMedia=r=>r.success({tempFiles:files});h.app.client={demo:h.client.demo,call:async(action,p)=>{if(action==='uploadImage'){calls.push(p.previewUrl);if(fail&&p.previewUrl.includes('three'))throw Error('图片审核响应较慢');}return original(action,p);}};
+ await editor.gallery(click({kind:'recap'}));assert.equal(editor.data.recapImages.length,2);assert.equal(editor.data.pendingUploadCount,2);assert.equal(editor.data.working,false);assert.match(editor.data.error,/第3张/);
+ await editor.save(click({}));assert.equal(editor.data.saved,false);assert.match(editor.data.error,/还有2张/);
+ fail=false;await editor.retryGallery();assert.equal(editor.data.pendingUploadCount,0);assert.equal(editor.data.recapImages.length,4);assert.equal(editor.data.error,'');assert.deepEqual(calls,files.slice(0,3).concat(files.slice(2)).map(x=>x.tempFilePath));
+ await editor.save(click({}));assert.equal(editor.data.saved,true);assert.equal((await original('getEvent',{id:'e_v2_history'})).event.recapImages.length,4);
+});
+test('V3 a first-photo failure restores controls and permits saving only confirmed pictures after discarding pending work',async()=>{
+ const h=harness();h.client.demo.switch('owner');const editor=h.page('editor',{id:'e_v2_history',content:'1'});await editor.ready;
+ h.wx.chooseMedia=r=>r.success({tempFiles:[{tempFilePath:'/demo/one.jpg'},{tempFilePath:'/demo/two.jpg'}]});const original=h.client.call.bind(h.client);
+ h.app.client={demo:h.client.demo,call:async(action,p)=>{if(action==='uploadImage')throw Error('图片处理超时');return original(action,p);}};
+ await editor.gallery(click({kind:'recap'}));assert.equal(editor.data.working,false);assert.equal(editor.data.pendingUploadCount,2);assert.equal(editor.data.recapImages.length,0);
+ editor.discardPending();await editor.save(click({}));assert.equal(editor.data.saved,true);assert.equal((await original('getEvent',{id:'e_v2_history'})).event.recapImages.length,0);
+});
 test('V3 introduction carousel fills landscape photos, preserves tall content and previews original images',async()=>{
  const h=harness();h.client.demo.switch('owner');const images=[];
  for(const name of ['landscape','portrait','panorama'])images.push((await h.client.call('uploadImage',{kind:'description',previewUrl:'/demo/'+name+'.jpg'})).assetId);

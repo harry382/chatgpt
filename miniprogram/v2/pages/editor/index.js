@@ -6,7 +6,7 @@ Page({
  data: {
   form: { title:'', book:'', category:'文学', location:'', address:'', description:'', remarks:'', agenda:DEFAULT_AGENDA, capacity:'8', startDate:'', startTime:'14:00', endDate:'', endTime:'16:00', deadlineDate:'', deadlineTime:'13:00', latitude:null, longitude:null, cover:'', checkinCode:'654321', recapText:'' },
   coverUrl:'', descriptionImages:[], recapImages:[], notices:DEFAULT_NOTICES.map((n,i)=>({...n,key:"notice_"+i})),
-  categories:u.CATEGORIES, categoryIndex:3, error:'', working:false, ready:false, demo:false, locked:false, ended:false, contentOnly:false, cancelled:false, saved:false, uploadStatus:''
+  categories:u.CATEGORIES, categoryIndex:3, error:'', working:false, ready:false, demo:false, locked:false, ended:false, contentOnly:false, cancelled:false, saved:false, uploadStatus:'', pendingUploadCount:0
  },
  async onLoad(q = {}) {
   this.id = q.id || ''; this.setData({ demo:!!u.api().demo, contentOnly:q.content === '1' });
@@ -35,6 +35,7 @@ Page({
  },
  async gallery(e) {
   if (this.data.working || !this.data.ready || this.data.cancelled) return;
+  if (this.pendingGallery) { this.setData({error:'请先重试剩余图片，或选择暂不上传剩余图片'}); return; }
   const kind = e.currentTarget.dataset.kind;
   if (!['description', 'recap'].includes(kind) || kind === 'recap' && !this.data.ended) return;
   const key = kind + 'Images', max = kind === 'description' ? 9 : 12, room = max - this.data[key].length;
@@ -47,14 +48,44 @@ Page({
     this.publicationAccepted = true;
    }
    const selected = await u.promiseWx('chooseMedia', { count:Math.min(room, 9), mediaType:['image'], sourceType:['album'] });
-   for (let i = 0; i < selected.tempFiles.length; i++) {
-    this.setData({ uploadStatus:'正在审核图片 ' + (i + 1) + ' / ' + selected.tempFiles.length });
-    const image = await u.upload(kind, selected.tempFiles[i].tempFilePath);
-    this.setData({ [key]:this.data[key].concat(image) });
-   }
+   if (!selected.tempFiles.length) return;
+   this.pendingGallery = {kind,key,files:selected.tempFiles,index:0};
+   this.setData({pendingUploadCount:selected.tempFiles.length});
+   await this.processGallery();
   } catch (error) { if (!/cancel/.test(error.errMsg || '')) { u.error(this, error); wx.showToast({ title:'图片未添加，请查看页面提示', icon:'none' }); } }
   finally { this.setData({ working:false, uploadStatus:'' }); }
  },
+ async processGallery() {
+  const batch = this.pendingGallery;
+  if (!batch) return;
+  try {
+   while (batch.index < batch.files.length) {
+    const number=batch.index+1,total=batch.files.length;
+    this.setData({uploadStatus:'正在处理图片 '+number+' / '+total+'（已完成'+batch.index+'张）'});
+    const image=await u.upload(batch.kind,batch.files[batch.index].tempFilePath,{onRetry:()=>this.setData({uploadStatus:'第'+number+'张响应较慢，正在自动重试；已完成图片会保留'})});
+    if(this.pendingGallery!==batch)return;
+    if(!this.data[batch.key].some(x=>x.assetId===image.assetId))this.setData({[batch.key]:this.data[batch.key].concat(image)});
+    batch.index++;
+    this.setData({pendingUploadCount:total-batch.index});
+   }
+   this.pendingGallery=null;
+   wx.showToast({title:'图片已添加，请保存活动',icon:'none'});
+  } catch (error) {
+   if(this.pendingGallery!==batch)return;
+   this.setData({error:'第'+(batch.index+1)+'张未完成：'+(error.message||'图片处理失败')+'。已完成'+batch.index+'张已保留，剩余'+(batch.files.length-batch.index)+'张可重试。'});
+   wx.showToast({title:'部分图片未完成，可重试剩余图片',icon:'none'});
+  }
+ },
+ async retryGallery() {
+  if(this.data.working||!this.pendingGallery)return;
+  this.setData({working:true,error:''});
+  try{await this.processGallery();}finally{this.setData({working:false,uploadStatus:''});}
+ },
+ discardPending() {
+  if(this.data.working)return;
+  this.pendingGallery=null;this.setData({pendingUploadCount:0,error:'',uploadStatus:''});
+ },
+ onUnload(){this.pendingGallery=null;},
  removeImage(e) { if (this.data.working) return; const { kind, index } = e.currentTarget.dataset, key = kind + 'Images'; this.setData({ [key]:this.data[key].filter((_, i) => i !== Number(index)) }); },
  moveImage(e) { if (this.data.working) return; const { kind, index, delta } = e.currentTarget.dataset, key = kind + 'Images', list = this.data[key].slice(), from = Number(index), to = from + Number(delta); if (to < 0 || to >= list.length) return; [list[from], list[to]] = [list[to], list[from]]; this.setData({ [key]:list }); },
  previewImage(e) { const { kind, index } = e.currentTarget.dataset, images = this.data[kind + 'Images'].map(x => x.url).filter(Boolean); if (images.length) wx.previewImage({ urls:images, current:this.data[kind + 'Images'][Number(index)].url }); },
@@ -64,6 +95,7 @@ Page({
  async location() { try { const r = await u.promiseWx('chooseLocation'); this.setData({ 'form.location':r.name, 'form.address':r.address, 'form.latitude':r.latitude, 'form.longitude':r.longitude }); } catch (e) { if (!/cancel/.test(e.errMsg || '')) this.setData({ error:'地图选点暂不可用，可先填写地点保存草稿。' }); } },
  async save(e) {
   if (this.data.working || !this.data.ready || this.data.cancelled) return;
+  if (this.pendingGallery) { this.setData({error:'还有'+this.data.pendingUploadCount+'张图片未完成，请重试或选择暂不上传剩余图片，再保存活动'}); return; }
   this.setData({ working:true, error:'' });
   try {
    const f = this.data.form, media = { descriptionImages:this.data.descriptionImages.map(x => x.assetId), notices:this.data.notices, publicationAccepted:this.publicationAccepted === true };

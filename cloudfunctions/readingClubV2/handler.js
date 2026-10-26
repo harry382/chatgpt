@@ -4,26 +4,12 @@ const { createService, ClubError, TABLES: T, VERSION } = require('./domain');
 const { CloudStore } = require('./cloud-store');
 const { createContentChecker } = require('./content-safety');
 const { flushNotifications, notificationConfig } = require('./notifications');
+const { createMediaProcessor } = require('./media');
 function createHandler(cloud, env = process.env, logger = console) {
   const store = new CloudStore(cloud.database());
   const notify = notificationConfig(env);
-  const service = createService(store, { notificationsEnabled: notify.enabled, notificationState: notify.state, capabilities: { authentication: 'wechat', sms: false, subscriptionTemplateId: notify.enabled ? env.SUBSCRIBE_TEMPLATE_ID : '' }, makeId: () => 'e_' + crypto.randomBytes(12).toString('hex'), checkContent: (actor, content, scene) => createContentChecker(cloud)(actor, [content], scene === "profile" ? 1 : 3) });
-  async function media(actor, p) {
-    const user = await store.get(T.users, actor.id);
-    if (!user || user.status !== 'active' || user.privacyVersion !== VERSION) throw new ClubError('MEMBER_REQUIRED', '请先注册并同意隐私指引');
-    if (!['cover', 'avatar', 'group', 'description', 'recap'].includes(p.kind) || !['image/jpeg', 'image/png'].includes(p.type) || typeof p.base64 !== 'string' || p.base64.length > 1040000) throw new ClubError('MEDIA_INVALID', '请上传小于750KB的JPG或PNG图片');
-    const buffer = Buffer.from(p.base64, 'base64'), png = buffer.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])), jpeg = buffer[0] === 255 && buffer[1] === 216;
-    if (buffer.length > 768000 || !(png && p.type === 'image/png' || jpeg && p.type === 'image/jpeg')) throw new ClubError('MEDIA_INVALID', '图片格式无效');
-    // No client upload permission is needed; only this trusted function writes private storage.
-    let moderation;
-    try { moderation = await cloud.openapi.security.imgSecCheck({ media: { contentType: p.type, value: buffer } }); }
-    catch (_) { throw new ClubError('CONTENT_UNAVAILABLE', '图片审核暂时不可用，请稍后重试'); }
-    if (Number(moderation.errCode ?? moderation.errcode) !== 0) throw new ClubError('CONTENT_REJECTED', '图片未通过内容审核，请更换');
-    const id = 'asset_' + crypto.randomBytes(16).toString('hex');
-    const result = await cloud.uploadFile({ cloudPath: 'v2/' + actor.id + '/' + id + (png ? '.png' : '.jpg'), fileContent: buffer });
-    await store.put(T.assets, id, { id, ownerId: actor.id, kind: p.kind, status: 'approved', fileID: result.fileID, createdAt: Date.now() });
-    return { assetId: id };
-  }
+  const service = createService(store, { notificationsEnabled: notify.enabled, notificationState: notify.state, capabilities: { mediaPipelineVersion: 2, authentication: 'wechat', sms: false, subscriptionTemplateId: notify.enabled ? env.SUBSCRIBE_TEMPLATE_ID : '' }, makeId: () => 'e_' + crypto.randomBytes(12).toString('hex'), checkContent: (actor, content, scene) => createContentChecker(cloud)(actor, [content], scene === "profile" ? 1 : 3) });
+  const media = createMediaProcessor(cloud, store, logger);
   async function url(assetId) {
     if (!assetId) return '';
     const a = await store.get(T.assets, assetId); if (!a || a.status !== 'approved') return '';
@@ -74,7 +60,8 @@ function createHandler(cloud, env = process.env, logger = console) {
         // Application state has already committed. A push failure must never undo a seat promotion.
         try { await flushNotifications(store, cloud, env, logger); } catch (_) { logger.warn?.('v2 outbox retained'); }
       }
-      await hydrate(data); return { ok: true, data };
+      // Upload callers already have a local preview. Signing belongs to the later event read.
+      if (request.action !== 'uploadImage') await hydrate(data); return { ok: true, data };
     } catch (error) {
       if (error instanceof ClubError || error.code?.startsWith('CONTENT_')) return { ok: false, error: { code: error.code, message: error.message } };
       logger.error('readingClubV2 failed', { code: error.code || error.errCode || 'INTERNAL' });

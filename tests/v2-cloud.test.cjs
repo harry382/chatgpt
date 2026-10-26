@@ -79,6 +79,12 @@ test('V3 risky public photos never enter storage or become attachable content',a
  const r=await f.handler({action:'uploadImage',payload:{kind:'recap',type:'image/png',base64:Buffer.from([137,80,78,71,13,10,26,10,1]).toString('base64')}});
  assert.equal(r.error.code,'CONTENT_REJECTED');assert.equal(uploads,0);assert.equal(Object.keys(f.store.snapshot()[T.assets]||{}).length,0);
 });
+test('V3 upload confirms storage without signing a URL and retries return one approved asset',async()=>{
+ const f=setup();let audits=0,uploads=0,signs=0;f.cloud.openapi.security.imgSecCheck=async()=>{audits++;return{errCode:0};};
+ f.cloud.uploadFile=async p=>{uploads++;return{fileID:'cloud://'+p.cloudPath};};f.cloud.getTempFileURL=()=>{signs++;return new Promise(()=>{});};
+ const request={action:'uploadImage',payload:{kind:'recap',type:'image/png',base64:Buffer.from([137,80,78,71,13,10,26,10,1]).toString('base64')}};
+ const a=await f.handler(request),b=await f.handler(request);assert.equal(a.ok,true);assert.equal(a.data.assetId,b.data.assetId);assert.equal(uploads,1);assert.equal(audits,1);assert.equal(signs,0);
+});
 
 test('V3 trial and release posters use separate files and targets while old clients keep the configured default',async()=>{
  const f=setup();await f.store.put(T.events,'event_share',{id:'event_share',status:'published',visibility:'public',creatorId:f.id});

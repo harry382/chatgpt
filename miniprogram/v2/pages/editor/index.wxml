@@ -37,6 +37,11 @@
  <view wx:if="{{!contentOnly}}" class="v2-node-view v2-field"><text class="v2-node-text">现场签到口令 *</text><input class="v2-node-input" data-field="form.checkinCode" bindinput="field" value="{{form.checkinCode}}" type="number" maxlength="6"/><view class="v2-node-view v2-muted v2-small">六位数字，仅发起人可见。请到场后告知成员。</view></view>
  <view wx:if="{{uploadStatus}}" class="v2-node-view v2-hint">{{uploadStatus}}</view>
  <view wx:if="{{error}}" class="v2-node-view v2-error">{{error}}</view>
+ <view wx:if="{{pendingUploadCount && !working}}" class="v2-node-view v2-field">
+  <button class="v2-node-button v2-light" bindtap="retryGallery">重试剩余{{pendingUploadCount}}张图片</button>
+  <button class="v2-node-button v2-link" bindtap="discardPending">暂不上传剩余图片</button>
+  <view class="v2-node-view v2-muted v2-small">成功图片已留在本页，保存活动后才会公开展示。请在完成前保留当前页面。</view>
+ </view>
  <button wx:if="{{contentOnly}}" class="v2-node-button v2-primary" bindtap="save" disabled="{{working || !ready || cancelled}}" loading="{{working}}">{{ended ? '保存活动回顾' : '保存介绍与须知'}}</button>
  <view wx:else class="v2-node-view v2-two-col"><button class="v2-node-button v2-light" bindtap="save" data-publish="{{false}}" disabled="{{working || !ready}}">保存草稿</button><button class="v2-node-button v2-primary" bindtap="save" data-publish="{{true}}" disabled="{{working || !ready}}" loading="{{working}}">发布活动</button></view>
 </view>
