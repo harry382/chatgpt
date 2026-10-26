@@ -6,6 +6,7 @@ function matches(row, criteria) {
     const expected = criteria[key];
     if (expected && typeof expected === 'object') {
       if ('$gt' in expected) return row[key] > expected.$gt;
+      if ('$lte' in expected) return row[key] <= expected.$lte;
       throw new Error('Unsupported query operator');
     }
     return row[key] === expected;

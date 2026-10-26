@@ -1,5 +1,5 @@
 <view class="v2-node-view v2">
- <view wx:if="{{demo}}" class="v2-node-view v2-demo">1.1.0 交互预览 · 所有活动与账号均为演示</view>
+ <view wx:if="{{demo}}" class="v2-node-view v2-demo">1.2.0 交互预览 · 所有活动与账号均为演示</view>
  <view class="v2-node-view v2-hero">
   <view class="v2-node-view v2-eyebrow">READ TOGETHER · 一起共读</view>
   <view class="v2-node-view v2-hero-title"><text class="v2-node-text v2-spark">✳</text><view class="v2-node-view">把时间留给阅读</view><view class="v2-node-view">把想法分享给彼此</view></view>

@@ -15,12 +15,12 @@ function harness() {
  return{wx,app,client,page,navigation,storage,messages,ui:load(path.join(root,'v2/ui.js'))};
 }
 const click=dataset=>({currentTarget:{dataset}});
-test('V2 page flow: public browse → register → resume event → join → group → cancel',async()=>{
+test('V2 page flow: public browse → register → resume event → join → notices → cancel',async()=>{
  const h=harness(),home=h.page('home');await home.refresh();assert.equal(home.data.groups.length,2);assert.equal(home.data.user,null);
  const detail=h.page('detail',{id:'e_v2_literature'});await detail.load();await detail.join();assert.match(h.navigation.at(-1),/membership/);
  const register=h.page('register');await register.ready;await register.register();assert.match(register.data.error,/同意/);register.setData({agreed:true});await register.register();assert.match(register.data.error,/昵称/);register.setData({nickname:'共读新朋友'});await register.register();
  assert.match(h.navigation.at(-1),/detail\/index\?id=e_v2_literature/);
- await detail.load();await detail.join();assert.equal(detail.data.event.count,2);assert.equal(detail.data.groupOpen,true);assert.match(detail.data.groupMessage,/未关联真实微信群/);
+ await detail.load();await detail.join();assert.equal(detail.data.event.count,2);assert.equal(detail.data.tab,'notices');assert.ok(detail.data.event.notices.some(n=>n.title==='按时出席'));assert.equal(detail.data.groupOpen,undefined);
  await detail.join();assert.equal(detail.data.event.count,1);
 });
 test('V2 preview queue: cancellation promotes current member and persists on restart',async()=>{
@@ -75,4 +75,31 @@ test('V2 an in-flight session response cannot undo an explicit logout',async()=>
  const h=harness();h.client.demo.switch('owner');let finish;h.app.client={call:()=>new Promise(resolve=>{finish=resolve;})};
  const pending=h.ui.session();h.ui.signOut();finish({user:{id:'owner',member:true}});
  assert.equal(await pending,null);assert.equal(h.app.globalData.user,null);
+});
+
+test('V3 history opens completed details, upload recap persists after restart, and only organizers can edit',async()=>{
+ const h=harness(),history=h.page('history');await history.refresh();assert.equal(history.data.events.length,1);assert.equal(history.data.events[0].ended,true);assert.equal(history.data.slides.length,1);
+ const detail=h.page('detail',{id:'e_v2_history'});await detail.load();assert.equal(detail.data.tab,'recap');assert.equal(detail.data.canManage,false);
+ h.client.demo.switch('owner');await detail.load();assert.equal(detail.data.canManage,true);detail.content();assert.match(h.navigation.at(-1),/editor.*content=1/);
+ const editor=h.page('editor',{id:'e_v2_history',content:'1'});await editor.ready;assert.equal(editor.data.ended,true);assert.equal(editor.data.contentOnly,true);
+ h.wx.chooseMedia=r=>r.success({tempFiles:[{tempFilePath:'/demo/photo1.jpg'},{tempFilePath:'/demo/photo2.jpg'}]});
+ await editor.gallery(click({kind:'recap'}));assert.equal(editor.data.recapImages.length,2);assert.equal(editor.data.error,'');
+ editor.moveImage(click({kind:'recap',index:1,delta:-1}));editor.setData({'form.recapText':'一场很好的交流'});await editor.save(click({}));assert.equal(editor.data.saved,true);
+ h.app.client=createV2Client(h.wx,{mode:'demo'},'develop');await detail.load();assert.equal(detail.data.event.recapImages.length,2);assert.equal(detail.data.event.heroUrl,'/demo/photo2.jpg');assert.equal(detail.data.event.recapText,'一场很好的交流');
+ await history.refresh();assert.equal(history.data.events[0].photoCount,2);assert.equal(history.data.slides[0].heroUrl,'/demo/photo2.jpg');
+});
+test('V3 signup-locked event updates pictures and notices, and declined public-photo consent uploads nothing',async()=>{
+ const h=harness();h.client.demo.switch('owner');const editor=h.page('editor',{id:'e_v2_literature'});await editor.ready;assert.equal(editor.data.locked,true);assert.equal(editor.data.contentOnly,true);
+ h.wx.showModal=r=>r.success({confirm:false});let selections=0;h.wx.chooseMedia=r=>{selections++;r.success({tempFiles:[{tempFilePath:'/demo/intro.jpg'}]});};
+ await editor.gallery(click({kind:'description'}));assert.equal(selections,0);assert.equal(editor.data.descriptionImages.length,0);
+ h.wx.showModal=r=>r.success({confirm:true});await editor.gallery(click({kind:'description'}));assert.equal(editor.data.descriptionImages.length,1);
+ editor.addNotice();const index=editor.data.notices.length-1;editor.noticeField({...click({index,key:'title'}),detail:{value:'自带笔记本'}});editor.noticeField({...click({index,key:'body'}),detail:{value:'方便记录自己的问题'}});
+ editor.setData({'form.description':'有图片的活动介绍'});await editor.save(click({}));assert.equal(editor.data.error,'');
+ const r=await h.client.call('getEvent',{id:'e_v2_literature'});assert.equal(r.event.descriptionImages[0].url,'/demo/intro.jpg');assert.equal(r.event.notices.at(-1).title,'自带笔记本');assert.equal(r.event.count,1);
+});
+test('V3 history retry keeps the failed-page offset and successful refresh discards stale responses',async()=>{
+ const h=harness(),p=h.page('history');const event=require('../miniprogram/v2/runtime').seed(Date.now())[T.events].e_v2_history;
+ let fail=false,seen=[];h.app.client={call:async(action,payload)=>{seen.push(payload.offset);if(fail)throw Error('暂时断网');return{events:[{...event,id:'past_'+payload.offset}],hasMore:payload.offset===0};}};
+ await p.refresh();fail=true;await p.more();assert.deepEqual(seen,[0,1]);fail=false;await p.more();assert.deepEqual(seen,[0,1,1]);assert.equal(p.data.events.length,2);
+ let resolve;h.app.client={call:()=>new Promise(r=>{resolve=r;})};const pending=p.refresh();const finishOld=resolve;const fresh=p.refresh();resolve({events:[{...event,id:'newest'}],hasMore:false});await fresh;finishOld({events:[{...event,id:'stale'}],hasMore:false});await pending;assert.equal(p.data.events[0].id,'newest');
 });

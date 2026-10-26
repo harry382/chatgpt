@@ -12,7 +12,7 @@ function dateParts(timestamp) {
   const date=s.slice(0,10),time=s.slice(11,16),week='日一二三四五六'[new Date(timestamp+8*3600000).getUTCDay()];
   return{date,time,week,dateLabel:Number(date.slice(5,7))+'月'+Number(date.slice(8,10))+'日',full:date.replace(/-/g,'/')+' '+time+' 周'+week};
 }
-function eventView(e){const d=dateParts(e.startAt);return{...e,...d,fullLabel:d.full,endLabel:dateParts(e.endAt).time,full:e.count>=e.capacity,statusLabel:e.status==='draft'?'草稿':e.status==='cancelled'?'已取消':e.startAt<now()?'已开始':e.count>=e.capacity?'名额已满':'报名中',closed:e.status!=='published'||e.signupUntil<=now()};}
+function eventView(e){const d=dateParts(e.startAt),end=dateParts(e.endAt),ended=e.ended===undefined?e.status==='published'&&e.endAt<=now():e.ended;return{...e,...d,notices:(e.notices||[]).map((n,i)=>({...n,key:"notice_"+i})),participants:(e.participants||[]).map(p=>({...p,initial:p.nickname.slice(0,1)})),ended,year:d.date.slice(0,4),monthDay:d.date.slice(5).replace('-','.'),started:e.startAt<=now(),fullLabel:d.full,endLabel:end.date===d.date?end.time:end.full,full:e.count>=e.capacity,statusLabel:e.status==='draft'?'草稿':e.status==='cancelled'?'已取消':ended?'已结束':e.startAt<=now()?'进行中':e.count>=e.capacity?'名额已满':'报名中',closed:e.status!=='published'||e.signupUntil<=now()||e.startAt<=now()};}
 function now(){return api().demo?api().demo.clock():Date.now();}
 function groupEvents(rows){const groups=[];for(const row of rows){const e=eventView(row);let g=groups[groups.length-1];if(!g||g.date!==e.date){g={date:e.date,label:e.dateLabel,week:e.week,events:[]};groups.push(g);}g.events.push(e);}return groups;}
 async function session({forLogin=false}={}){

@@ -1,6 +1,6 @@
 {
   "name": "reading-club-mvp",
-  "version": "1.1.0-preview.1",
+  "version": "1.2.0-preview.1",
   "private": true,
   "description": "现有读书会社群的微信活动小程序",
   "engines": {

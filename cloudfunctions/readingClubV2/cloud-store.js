@@ -22,7 +22,7 @@ class CloudStore {
     const where = {};
     Object.keys(criteria).forEach(key => {
       const value = criteria[key];
-      where[key] = value && typeof value === 'object' && '$gt' in value ? this.database.command.gt(value.$gt) : value;
+      where[key] = value && typeof value === 'object' && '$gt' in value ? this.database.command.gt(value.$gt) : value && typeof value === 'object' && '$lte' in value ? this.database.command.lte(value.$lte) : value;
     });
     let query = this.unit.collection(table).where(where);
     if (options.orderBy) query = query.orderBy(options.orderBy, options.direction || 'asc').orderBy('_id', options.direction || 'asc');

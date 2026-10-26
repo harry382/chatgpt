@@ -1,6 +1,13 @@
 'use strict';
 const VERSION = '2026-10-24.2';
 const CATEGORIES = ['社会', '历史', '心理', '文学', 'AI', '商业', '哲学'];
+const DEFAULT_NOTICES = [
+  { title: '活动成行条件', body: '活动是否成行及时间、地点变更，以发起人确认和活动页面为准。出发前请再次查看；如取消，请自行调整行程。' },
+  { title: '按时出席', body: '请提前确认活动时间，尽量提前10分钟到达。行程有变请及时取消报名；活动开始后请联系发起人处理。到场后按主持人提供的口令签到。' },
+  { title: '谢绝敏感争执与营销活动', body: '请遵守法律法规，尊重不同观点，避免敏感争执。禁止推销、骚扰、引流等影响共读的行为。' },
+  { title: '饮品消费', body: '如活动场所有个人饮品或其他消费要求，以本活动的推荐语与备注为准，请提前了解并自行安排。' },
+  { title: '邀请新朋友', body: '欢迎邀请新朋友通过小程序报名。请勿未经确认直接带人到场；如需临时增加同行人员，请提前联系发起人确认并登记。' }
+];
 const TABLES = { users: 'club_v2_users', events: 'club_v2_events', registrations: 'club_v2_registrations', private: 'club_v2_event_private', notices: 'club_v2_notices', hosts: 'club_v2_hosts', assets: 'club_v2_assets', otp: 'club_v2_otp', subscriptions: 'club_v2_subscriptions' };
 class ClubError extends Error { constructor(code, message) { super(message); this.code = code; } }
 function fail(code, message) { throw new ClubError(code, message); }
@@ -30,7 +37,35 @@ function createService(store, options = {}) {
   }
   function editable(e, u) { if (e.creatorId !== u.id && u.role !== 'admin') fail('FORBIDDEN', '仅发起人可管理此活动'); }
   function open(e, u) { if (e.visibility === 'legacy_members' && !u?.migrated && u?.role !== 'admin') fail('FORBIDDEN', '此活动仅向原有会员开放'); if (e.status !== 'published' || now() >= e.signupUntil || now() >= e.startAt) fail('CLOSED', '活动已截止报名'); }
-  function publicEvent(e) { const { internal, ...result } = e; return result; }
+  function publicEvent(e) {
+    const { internal, ...result } = e;
+    return { ...result, ended: e.status === 'published' && e.endAt <= now(), notices: e.notices === undefined ? DEFAULT_NOTICES : e.notices,
+      descriptionImages: (e.descriptionImages || []).map(assetId => ({ assetId })), recapImages: (e.recapImages || []).map(assetId => ({ assetId })),
+      hero: e.recapImages?.[0] || e.cover || '' };
+  }
+  function cardEvent(e) {
+    const { descriptionImages, recapImages, notices, description, remarks, agenda, recapText, ...card } = publicEvent(e);
+    return { ...card, photoCount: (e.recapImages || []).length };
+  }
+  function noticeFields(value) {
+    if (!Array.isArray(value) || value.length > 12) fail('VALIDATION', '活动须知最多12条');
+    return value.map(n => ({ title: text(n?.title, '须知标题', 40), body: text(n?.body, '须知内容', 500) }));
+  }
+  async function imageList(unit, values, user, kind, previous, accepted, max) {
+    if (!Array.isArray(values) || values.length > max || values.some(id => !validId(id)) || new Set(values).size !== values.length) fail('MEDIA_INVALID', '图片列表无效或超过' + max + '张');
+    for (const id of values) {
+      const a = await unit.get(TABLES.assets, id), kept = (previous || []).includes(id);
+      if (!a || a.kind !== kind || a.status !== 'approved' || !kept && a.ownerId !== user.id) fail('MEDIA_INVALID', '请使用自己上传且已审核的图片');
+      if (!kept && accepted !== true) fail('PHOTO_CONSENT_REQUIRED', '请确认有权公开图片，并已获得可识别人物的同意');
+    }
+    return values.slice();
+  }
+  async function contentMedia(unit, p, u, e = {}) {
+    const descriptionImages = await imageList(unit, p.descriptionImages === undefined ? e.descriptionImages || [] : p.descriptionImages, u, 'description', e.descriptionImages, p.publicationAccepted, 9);
+    const recapImages = await imageList(unit, p.recapImages === undefined ? e.recapImages || [] : p.recapImages, u, 'recap', e.recapImages, p.publicationAccepted, 12);
+    if (recapImages.length && !(e.status === 'published' && e.endAt <= now())) fail('CLOSED', '活动结束后可上传现场回顾照片');
+    return { descriptionImages, recapImages };
+  }
   async function asset(unit, id, user, kind) {
     if (!id) return '';
     const a = await unit.get(TABLES.assets, id);
@@ -58,7 +93,7 @@ function createService(store, options = {}) {
     }
   }
   const actions = {
-    async capabilities() { return options.capabilities || { authentication: 'wechat', sms: false, subscriptionTemplateId: '' }; },
+    async capabilities() { return { apiVersion: '1.2.0', features: { history: true, eventImages: true, eventNotices: true }, ...(options.capabilities || { authentication: 'wechat', sms: false, subscriptionTemplateId: '' }) }; },
     async authorizeNotification(actor, p) {
       if (!options.notificationsEnabled || !actor.openid) fail('NOT_CONFIGURED', '微信订阅提醒尚未配置，站内通知可正常使用');
       return store.transaction(async unit => {
@@ -74,10 +109,21 @@ function createService(store, options = {}) {
       if (p.date) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date) || !Number.isFinite(Date.parse(p.date + 'T00:00:00+08:00')) || new Date(Date.parse(p.date + 'T00:00:00+08:00') + 28800000).toISOString().slice(0, 10) !== p.date) fail('VALIDATION', '日期无效');
         criteria.dateKey = p.date;
-      } else criteria.startAt = { $gt: now() - 86400000 };
+      }
+      criteria.endAt = { $gt: now() };
       const offset = Math.max(0, Math.min(10000, Number(p.offset) || 0));
       const rows = await store.find(TABLES.events, criteria, { orderBy: 'startAt', offset, limit: 21 });
-      return { events: rows.slice(0, 20).map(publicEvent), hasMore: rows.length > 20 };
+      return { events: rows.slice(0, 20).map(cardEvent), hasMore: rows.length > 20 };
+    },
+    async listHistory(actor, p) {
+      const offset = Math.max(0, Math.min(10000, Number(p.offset) || 0));
+      const rows = await store.find(TABLES.events, { status: 'published', visibility: 'public', endAt: { $lte: now() } }, { orderBy: 'startAt', direction: 'desc', offset, limit: 21 });
+      const events = await Promise.all(rows.slice(0, 20).map(async e => {
+        const regs = await store.find(TABLES.registrations, { eventId: e.id, status: 'registered' }, { orderBy: 'createdAt', limit: 3 });
+        const participants = await Promise.all(regs.map(async r => publicUser(await store.get(TABLES.users, r.userId))));
+        return { ...cardEvent(e), participants: participants.filter(Boolean) };
+      }));
+      return { events, hasMore: rows.length > 20 };
     },
     async session(actor) { return { user: selfUser(await store.get(TABLES.users, actor.id)) }; },
     async requestOtp() {
@@ -170,18 +216,42 @@ function createService(store, options = {}) {
       if (!Number.isInteger(fields.capacity) || fields.capacity < 2 || fields.capacity > 100) fail('VALIDATION', '人数限制为2至100人');
       if (![fields.startAt, fields.endAt, fields.signupUntil].every(n => Number.isSafeInteger(n) && n < 4102444800000) || fields.startAt <= now() || fields.endAt <= fields.startAt || fields.signupUntil > fields.startAt || fields.signupUntil <= now()) fail('VALIDATION', '请设置有效的未来活动时间及报名截止时间');
       if ((fields.latitude !== null || fields.longitude !== null) && !(Math.abs(fields.latitude) <= 90 && Math.abs(fields.longitude) <= 180 && fields.latitude !== null && fields.longitude !== null)) fail('VALIDATION', '地图坐标不正确，请重新选点');
+      const notices = noticeFields(p.notices === undefined ? before?.notices || DEFAULT_NOTICES : p.notices);
       const status = p.publish === true ? 'published' : 'draft';
-      await checkContent(actor, [fields.title, fields.book, fields.location, fields.address, fields.description, fields.remarks, fields.agenda].join('\n'), 'event');
+      await checkContent(actor, [fields.title, fields.book, fields.location, fields.address, fields.description, fields.remarks, fields.agenda, ...notices.map(n => n.title + '\n' + n.body)].join('\n'), 'event');
       return store.transaction(async unit => {
         const u = await member(unit, actor), existing = before ? await event(unit, before.id) : null;
         if (existing) { editable(existing, u); if (existing.version !== before.version) fail('CONFLICT', '活动已更新，请刷新后重试'); if (existing.count || existing.waitCount) fail('HAS_REGISTRATIONS', '已有报名，请先联系成员；本版不支持修改有报名的活动'); if (existing.status === 'cancelled' || now() >= existing.startAt) fail('CLOSED', '已取消或已开始的活动不能编辑'); }
         const cover = await asset(unit, p.cover || existing?.cover, u, 'cover'), groupAsset = await asset(unit, p.groupAsset, u, 'group');
-        const e = { ...(existing || {}), ...fields, visibility: 'public', dateKey: new Date(fields.startAt + 28800000).toISOString().slice(0, 10), id: existing?.id || makeId(), creatorId: existing?.creatorId || u.id, creatorName: u.nickname, cover, status, count: existing?.count || 0, waitCount: 0, nextQueue: 0, hostId: existing?.hostId || '', version: (existing?.version || 0) + 1, createdAt: existing?.createdAt || now(), updatedAt: now() };
+        const media = await contentMedia(unit, p, u, existing || {});
+        const e = { ...(existing || {}), ...fields, ...media, notices, visibility: 'public', dateKey: new Date(fields.startAt + 28800000).toISOString().slice(0, 10), id: existing?.id || makeId(), creatorId: existing?.creatorId || u.id, creatorName: u.nickname, cover, status, count: existing?.count || 0, waitCount: 0, nextQueue: 0, hostId: existing?.hostId || '', version: (existing?.version || 0) + 1, createdAt: existing?.createdAt || now(), updatedAt: now() };
         await unit.put(TABLES.events, e.id, e);
         const secret = await unit.get(TABLES.private, e.id) || { id: e.id };
         if (p.groupAsset !== undefined) secret.groupAsset = groupAsset;
         if (p.checkinCode !== undefined) { if (!/^\d{6}$/.test(p.checkinCode)) fail('VALIDATION', '签到口令需要六位数字'); secret.checkinCode = p.checkinCode; }
         await unit.put(TABLES.private, e.id, secret); return { event: publicEvent(e) };
+      });
+    },
+    async updateEventContent(actor, p) {
+      const before = await event(store, p.id), user = await member(store, actor); editable(before, user);
+      if (!Number.isInteger(p.version) || p.version !== before.version) fail('CONFLICT', '活动已更新，请重新打开编辑页后重试');
+      const fields = {
+        description: text(p.description === undefined ? before.description : p.description, '内容简介', 4000),
+        remarks: text(p.remarks === undefined ? before.remarks : p.remarks, '推荐语与备注', 2000, false),
+        agenda: text(p.agenda === undefined ? before.agenda : p.agenda, '活动流程', 4000),
+        recapText: text(p.recapText === undefined ? before.recapText : p.recapText, '活动回顾', 2000, false),
+        notices: noticeFields(p.notices === undefined ? before.notices || DEFAULT_NOTICES : p.notices)
+      };
+      await checkContent(actor, [fields.description, fields.remarks, fields.agenda, fields.recapText, ...fields.notices.map(n => n.title + '\n' + n.body)].join('\n'), 'event');
+      return store.transaction(async unit => {
+        const u = await member(unit, actor), e = await event(unit, p.id); editable(e, u);
+        if (e.version !== before.version) fail('CONFLICT', '活动已更新，请重新打开编辑页后重试');
+        if (e.status === 'cancelled') fail('CLOSED', '已取消的活动不能编辑');
+        if (fields.recapText && !(e.status === 'published' && e.endAt <= now())) fail('CLOSED', '活动结束后可编写回顾');
+        const media = await contentMedia(unit, p, u, e);
+        Object.assign(e, fields, media, { version: e.version + 1, updatedAt: now() });
+        await unit.put(TABLES.events, e.id, e);
+        return { event: publicEvent(e) };
       });
     },
     async cancelEvent(actor, p) {
@@ -286,4 +356,4 @@ function createService(store, options = {}) {
     return Promise.resolve(actions[action](actor, payload));
   } };
 }
-module.exports = { createService, ClubError, TABLES, CATEGORIES, VERSION };
+module.exports = { createService, ClubError, TABLES, CATEGORIES, VERSION, DEFAULT_NOTICES };

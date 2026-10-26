@@ -1,6 +1,7 @@
 {
   "pages": [
     "v2/pages/home/index",
+    "v2/pages/history/index",
     "v2/pages/detail/index",
     "v2/pages/membership/index",
     "v2/pages/register/index",
@@ -34,6 +35,10 @@
       {
         "pagePath": "v2/pages/home/index",
         "text": "首页"
+      },
+      {
+        "pagePath": "v2/pages/history/index",
+        "text": "历史"
       },
       {
         "pagePath": "v2/pages/mine/index",

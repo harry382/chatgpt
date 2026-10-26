@@ -1,0 +1,38 @@
+<view class="v2-node-view v2">
+ <view wx:if="{{demo}}" class="v2-node-view v2-demo">开发预览 · 以下为本地演示记录</view>
+ <view class="v2-node-view v2-hero v2-history-hero">
+  <view class="v2-node-view v2-eyebrow">OUR READING MEMORIES</view>
+  <view class="v2-node-view v2-hero-title">读过的书，相聚的时光。</view>
+  <view class="v2-node-view v2-hero-sub">让每一次共读，都留下回响。</view>
+  <swiper wx:if="{{slides.length}}" class="v2-history-carousel" indicator-dots="{{slides.length > 1}}" indicator-color="rgba(255,255,255,.45)" indicator-active-color="#fff3bf" circular="{{slides.length > 1}}">
+   <swiper-item wx:for="{{slides}}" wx:key="id">
+    <view class="v2-node-view v2-history-slide" data-id="{{item.id}}" bindtap="openEvent">
+     <image wx:if="{{item.heroUrl}}" class="v2-node-image v2-history-slide-image" src="{{item.heroUrl}}" mode="aspectFill"/>
+     <view wx:else class="v2-node-view v2-history-slide-art">◯</view>
+     <view class="v2-node-view v2-history-slide-caption"><view class="v2-node-view v2-caption">{{item.date}} · {{item.location}}</view><view class="v2-node-view v2-history-slide-title">{{item.title}}</view></view>
+    </view>
+   </swiper-item>
+  </swiper>
+ </view>
+ <view class="v2-node-view v2-sheet v2-history-sheet">
+  <view class="v2-node-view v2-row"><view class="v2-node-view v2-section">历史活动</view><text class="v2-node-text v2-muted v2-small">最近的相聚，排在前面</text></view>
+  <view wx:if="{{error}}" class="v2-node-view v2-error">{{error}}<button class="v2-node-button v2-link" bindtap="refresh">重新加载</button></view>
+  <view class="v2-node-view v2-history-timeline">
+   <view wx:for="{{events}}" wx:key="id" class="v2-node-view v2-history-entry">
+    <view class="v2-node-view v2-history-date"><view class="v2-node-view">{{item.monthDay}}</view><view class="v2-node-view v2-history-year">{{item.year}}</view></view>
+    <view class="v2-node-view v2-history-entry-body">
+     <view class="v2-node-view v2-history-people"><block wx:for="{{item.participants}}" wx:for-item="person" wx:key="id"><image wx:if="{{person.avatarUrl}}" class="v2-node-image v2-history-avatar" src="{{person.avatarUrl}}" mode="aspectFill"/><view wx:else class="v2-node-view v2-history-avatar">{{person.initial}}</view></block><text class="v2-node-text v2-history-people-note">{{item.count}}位书友报名</text></view>
+     <view class="v2-node-view v2-history-card" data-id="{{item.id}}" bindtap="openEvent">
+      <image wx:if="{{item.heroUrl}}" class="v2-node-image v2-history-thumb" src="{{item.heroUrl}}" mode="aspectFill"/>
+      <view wx:else class="v2-node-view v2-history-thumb v2-book"><text class="v2-node-text v2-book-top">一起共读</text><text class="v2-node-text v2-book-name">{{item.book}}</text></view>
+      <view class="v2-node-view v2-history-content"><view class="v2-node-view v2-event-title">{{item.title}}</view><view class="v2-node-view v2-meta">◷ 周{{item.week}} {{item.time}}</view><view class="v2-node-view v2-meta v2-ellipsis">⌖ {{item.location}}</view><view class="v2-node-view v2-history-photo-note">{{item.photoCount ? item.photoCount + '张现场照片 · 查看回顾' : '共读记录 · 查看详情'}} ↗</view></view>
+     </view>
+    </view>
+   </view>
+  </view>
+  <view wx:if="{{loading}}" class="v2-node-view v2-empty">正在找回共读时光…</view>
+  <view wx:if="{{!loading && !events.length && !error}}" class="v2-node-view v2-empty"><view class="v2-node-view v2-empty-icon">◷</view>相聚的故事，即将在这里留下。<button class="v2-node-button v2-link" bindtap="home">去看看下一场共读</button></view>
+  <button wx:if="{{hasMore && !loading}}" class="v2-node-button v2-link" bindtap="more">查看更多历史活动</button>
+  <view wx:if="{{events.length && !hasMore && !loading}}" class="v2-node-view v2-footer-note">一起读过的时光，都值得记得。</view>
+ </view>
+</view>

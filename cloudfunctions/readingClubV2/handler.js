@@ -11,7 +11,7 @@ function createHandler(cloud, env = process.env, logger = console) {
   async function media(actor, p) {
     const user = await store.get(T.users, actor.id);
     if (!user || user.status !== 'active' || user.privacyVersion !== VERSION) throw new ClubError('MEMBER_REQUIRED', '请先注册并同意隐私指引');
-    if (!['cover', 'avatar', 'group'].includes(p.kind) || !['image/jpeg', 'image/png'].includes(p.type) || typeof p.base64 !== 'string' || p.base64.length > 1040000) throw new ClubError('MEDIA_INVALID', '请上传小于750KB的JPG或PNG图片');
+    if (!['cover', 'avatar', 'group', 'description', 'recap'].includes(p.kind) || !['image/jpeg', 'image/png'].includes(p.type) || typeof p.base64 !== 'string' || p.base64.length > 1040000) throw new ClubError('MEDIA_INVALID', '请上传小于750KB的JPG或PNG图片');
     const buffer = Buffer.from(p.base64, 'base64'), png = buffer.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])), jpeg = buffer[0] === 255 && buffer[1] === 216;
     if (buffer.length > 768000 || !(png && p.type === 'image/png' || jpeg && p.type === 'image/jpeg')) throw new ClubError('MEDIA_INVALID', '图片格式无效');
     // No client upload permission is needed; only this trusted function writes private storage.
@@ -31,13 +31,15 @@ function createHandler(cloud, env = process.env, logger = console) {
     const file = response.fileList?.[0];
     return file?.status === 0 ? file.tempFileURL : '';
   }
-  async function hydrate(value) {
+  async function hydrate(value, cache = new Map()) {
     if (!value || typeof value !== 'object') return;
-    if (value.cover) value.coverUrl = await url(value.cover);
-    if (value.avatar) value.avatarUrl = await url(value.avatar);
-    if (value.assetId) value.url = await url(value.assetId);
+    const signed = id => { if (!cache.has(id)) cache.set(id, url(id)); return cache.get(id); };
+    if (value.cover) value.coverUrl = await signed(value.cover);
+    if (value.hero) value.heroUrl = await signed(value.hero);
+    if (value.avatar) value.avatarUrl = await signed(value.avatar);
+    if (value.assetId) value.url = await signed(value.assetId);
     for (const [k, child] of Object.entries(value)) if (child && typeof child === 'object') {
-      if (Array.isArray(child)) await Promise.all(child.map(hydrate)); else await hydrate(child);
+      if (Array.isArray(child)) await Promise.all(child.map(item => hydrate(item, cache))); else await hydrate(child, cache);
     }
   }
   return async request => {
