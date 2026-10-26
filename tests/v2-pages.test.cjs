@@ -6,7 +6,11 @@ const {VERSION,TABLES:T}=require('../miniprogram/v2/shared/domain');
 const root=path.resolve(__dirname,'../miniprogram');
 function harness() {
  const storage=new Map(),navigation=[],messages=[];let app;
- const wx={getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,JSON.parse(JSON.stringify(v))),removeStorageSync:k=>storage.delete(k),getAccountInfoSync:()=>({miniProgram:{envVersion:'develop'}}),stopPullDownRefresh(){},showShareMenu(){},navigateTo:r=>navigation.push(r.url),switchTab:r=>navigation.push(r.url),redirectTo:r=>navigation.push(r.url),reLaunch:r=>navigation.push(r.url),navigateBack:()=>navigation.push('back'),showToast:r=>messages.push(r.title),getPrivacySetting:r=>r.success({needAuthorization:false}),showModal:r=>r.success({confirm:true,content:'654321'}),openLocation:r=>r.success({})};
+ const wx={getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,JSON.parse(JSON.stringify(v))),removeStorageSync:k=>storage.delete(k),getAccountInfoSync:()=>({miniProgram:{envVersion:'develop'}}),stopPullDownRefresh(){},showShareMenu(){},navigateTo:r=>navigation.push(r.url),switchTab:r=>navigation.push(r.url),redirectTo:r=>navigation.push(r.url),reLaunch:r=>navigation.push(r.url),navigateBack:()=>navigation.push('back'),showToast:r=>messages.push(r.title),getPrivacySetting:r=>r.success({needAuthorization:false}),showModal:r=>{
+  // Match the native failure reproduced in DevTools for a five-Chinese-character label.
+  for(const key of ['confirmText','cancelText'])if((r[key]?.match(/[\u3400-\u9fff]/g)||[]).length>4){r.fail({errMsg:'showModal:fail '+key+' length should not larger than 4 Chinese characters'});return;}
+  r.success({confirm:true,content:'654321'});
+ },openLocation:r=>r.success({})};
  const client=createV2Client(wx,{mode:'demo'},'develop');app={client,globalData:{},rememberEvent:id=>storage.set('pending',id),pendingEvent:()=>storage.get('pending'),clearPendingEvent:()=>storage.delete('pending')};
  // Helpers access the real injected app and platform in a dedicated VM require graph.
  const cache=new Map();
@@ -102,4 +106,13 @@ test('V3 history retry keeps the failed-page offset and successful refresh disca
  let fail=false,seen=[];h.app.client={call:async(action,payload)=>{seen.push(payload.offset);if(fail)throw Error('暂时断网');return{events:[{...event,id:'past_'+payload.offset}],hasMore:payload.offset===0};}};
  await p.refresh();fail=true;await p.more();assert.deepEqual(seen,[0,1]);fail=false;await p.more();assert.deepEqual(seen,[0,1,1]);assert.equal(p.data.events.length,2);
  let resolve;h.app.client={call:()=>new Promise(r=>{resolve=r;})};const pending=p.refresh();const finishOld=resolve;const fresh=p.refresh();resolve({events:[{...event,id:'newest'}],hasMore:false});await fresh;finishOld({events:[{...event,id:'stale'}],hasMore:false});await pending;assert.equal(p.data.events[0].id,'newest');
+});
+test('V3 image picker failure is visible, releases the button, and can retry without losing form data',async()=>{
+ const h=harness();h.client.demo.switch('owner');const editor=h.page('editor');await editor.ready;
+ editor.setData({'form.title':'未保存的介绍'});
+ h.wx.chooseMedia=r=>r.fail({errMsg:'chooseMedia:fail permission denied'});
+ await editor.gallery(click({kind:'description'}));
+ assert.match(editor.data.error,/permission denied/);assert.equal(h.messages.at(-1),'图片未添加，请查看页面提示');assert.equal(editor.data.working,false);assert.equal(editor.data.descriptionImages.length,0);
+ h.wx.chooseMedia=r=>r.success({tempFiles:[{tempFilePath:'/demo/retry.jpg'}]});
+ await editor.gallery(click({kind:'description'}));assert.equal(editor.data.descriptionImages.length,1);assert.equal(editor.data.form.title,'未保存的介绍');assert.equal(editor.data.error,'');
 });

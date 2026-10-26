@@ -6,7 +6,7 @@ const api=()=>getApp().client;
 function navigate(page,query=''){wx.navigateTo({url:'/v2/pages/'+page+'/index'+query});}
 function home(){wx.switchTab({url:'/v2/pages/home/index'});}
 function field(e){this.setData({[e.currentTarget.dataset.field]:e.detail.value});}
-function error(page,e){page.setData({error:e.message||'操作未完成，请重试'});}
+function error(page,e){page.setData({error:e.message||e.errMsg||'操作未完成，请重试'});}
 function dateParts(timestamp) {
   const s=new Date(timestamp+8*3600000).toISOString();
   const date=s.slice(0,10),time=s.slice(11,16),week='日一二三四五六'[new Date(timestamp+8*3600000).getUTCDay()];

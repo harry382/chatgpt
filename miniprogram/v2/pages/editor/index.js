@@ -42,7 +42,7 @@ Page({
   this.setData({ working:true, error:'' });
   try {
    if (!this.publicationAccepted) {
-    const choice = await u.promiseWx('showModal', { title:'图片会在活动页面公开展示', content:'请仅上传有权使用的图片。现场照片中如有人物可被识别，请先取得本人同意；不要上传群码、证件或私人聊天截图。', confirmText:'确认并选择' });
+    const choice = await u.promiseWx('showModal', { title:'图片会在活动页面公开展示', content:'请仅上传有权使用的图片。现场照片中如有人物可被识别，请先取得本人同意；不要上传群码、证件或私人聊天截图。', confirmText:'确认选择' });
     if (!choice.confirm) return;
     this.publicationAccepted = true;
    }
@@ -52,7 +52,7 @@ Page({
     const image = await u.upload(kind, selected.tempFiles[i].tempFilePath);
     this.setData({ [key]:this.data[key].concat(image) });
    }
-  } catch (error) { if (!/cancel/.test(error.errMsg || '')) u.error(this, error); }
+  } catch (error) { if (!/cancel/.test(error.errMsg || '')) { u.error(this, error); wx.showToast({ title:'图片未添加，请查看页面提示', icon:'none' }); } }
   finally { this.setData({ working:false, uploadStatus:'' }); }
  },
  removeImage(e) { if (this.data.working) return; const { kind, index } = e.currentTarget.dataset, key = kind + 'Images'; this.setData({ [key]:this.data[key].filter((_, i) => i !== Number(index)) }); },
